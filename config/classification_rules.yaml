@@ -1,0 +1,35 @@
+symbols:
+  BTC: {asset_class: crypto, display_name: Bitcoin, tags: [major_crypto]}
+  ETH: {asset_class: crypto, display_name: Ethereum, tags: [major_crypto, layer_1]}
+  SOL: {asset_class: crypto, tags: [major_crypto, layer_1]}
+  HYPE: {asset_class: crypto, tags: [layer_1, hyperliquid_ecosystem]}
+  GOLD: {asset_class: commodity, subcategory: precious_metals, tags: [precious_metals]}
+  SILVER: {asset_class: commodity, subcategory: precious_metals, tags: [precious_metals]}
+  XYZ100: {asset_class: equity_index, display_name: Trade XYZ 100, tags: [us_equity, big_tech]}
+  SPX: {asset_class: equity_index, tags: [us_equity]}
+  NIKKEI: {asset_class: equity_index, tags: [asia_equity]}
+  AAPL: {asset_class: equity, tags: [big_tech, magnificent_7, consumer, us_equity]}
+  MSFT: {asset_class: equity, tags: [big_tech, magnificent_7, artificial_intelligence, us_equity]}
+  NVDA: {asset_class: equity, tags: [big_tech, magnificent_7, semiconductors, artificial_intelligence, us_equity]}
+  AMZN: {asset_class: equity, tags: [big_tech, magnificent_7, consumer, us_equity]}
+  META: {asset_class: equity, tags: [big_tech, magnificent_7, artificial_intelligence, us_equity]}
+  GOOGL: {asset_class: equity, tags: [big_tech, magnificent_7, artificial_intelligence, us_equity]}
+  TSLA: {asset_class: equity, tags: [magnificent_7, automotive, clean_energy, us_equity]}
+  AMD: {asset_class: equity, tags: [semiconductors, artificial_intelligence, us_equity]}
+  INTC: {asset_class: equity, tags: [semiconductors, us_equity]}
+  PLTR: {asset_class: equity, tags: [artificial_intelligence, defense, us_equity]}
+  COIN: {asset_class: equity, tags: [fintech, digital_assets, us_equity]}
+  HOOD: {asset_class: equity, tags: [fintech, digital_assets, us_equity]}
+  OPENAI: {asset_class: pre_ipo, is_pre_ipo: true, tags: [artificial_intelligence, us_equity]}
+  SPACE: {asset_class: pre_ipo, is_pre_ipo: true, tags: [space, us_equity]}
+tag_groups:
+  layer_1: [BTC, ETH, SOL, AVAX, ADA, SUI, APT, NEAR, SEI, HYPE]
+  layer_2: [ARB, OP, STRK, ZK, MATIC, POL]
+  defi: [AAVE, UNI, CRV, PENDLE, MORPHO, COMP, SUSHI, GMX]
+  ai_crypto: [TAO, RENDER, FET, VIRTUAL, KAITO, AIXBT]
+  meme: [DOGE, kPEPE, kBONK, WIF, POPCAT, FARTCOIN, PENGU, TRUMP]
+  depin: [RENDER, FIL, AR, GRASS, IO]
+  gaming: [IMX, GALA, AXS, SAND, YGG, SUPER]
+  rwa: [ONDO, PAXG, POLYX]
+  hyperliquid_ecosystem: [HYPE, PURR, HFUN, LIT]
+

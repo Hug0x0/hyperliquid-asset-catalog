@@ -1,0 +1,34 @@
+baskets:
+  crypto_majors: {name: Crypto Majors, selection: {symbols: [BTC, ETH, SOL]}, weighting: equal, minimum_constituents: 2}
+  layer_1: {name: Layer 1, selection: {tags: [layer_1]}, weighting: liquidity, minimum_constituents: 4}
+  layer_2: {name: Layer 2, selection: {tags: [layer_2]}, weighting: equal, minimum_constituents: 3}
+  defi: {name: DeFi, selection: {tags: [defi]}, weighting: liquidity, minimum_constituents: 4}
+  ai_crypto: {name: AI Crypto, selection: {tags: [ai_crypto]}, weighting: equal, minimum_constituents: 3}
+  memecoins: {name: Memecoins, selection: {tags: [meme]}, weighting: liquidity, minimum_constituents: 4}
+  depin: {name: DePIN, selection: {tags: [depin]}, weighting: equal, minimum_constituents: 3}
+  gaming: {name: Gaming, selection: {tags: [gaming]}, weighting: equal, minimum_constituents: 3}
+  rwa: {name: RWA, selection: {tags: [rwa]}, weighting: equal, minimum_constituents: 2}
+  hyperliquid_ecosystem: {name: Hyperliquid Ecosystem, selection: {tags: [hyperliquid_ecosystem]}, weighting: equal, minimum_constituents: 2}
+  magnificent_7: {name: Magnificent 7, selection: {symbols: [AAPL, MSFT, NVDA, AMZN, META, GOOGL, TSLA]}, weighting: equal, minimum_constituents: 5}
+  big_tech: {name: Big Tech, selection: {tags: [big_tech]}, weighting: equal, minimum_constituents: 4}
+  ai_stocks: {name: AI Stocks, selection: {symbols: [NVDA, AMD, PLTR, MSFT, GOOGL]}, weighting: equal, minimum_constituents: 3}
+  semiconductors: {name: Semiconductors, selection: {symbols: [NVDA, AMD, INTC]}, weighting: equal, minimum_constituents: 2}
+  fintech: {name: Fintech, selection: {symbols: [COIN, HOOD]}, weighting: equal, minimum_constituents: 2}
+  digital_asset_companies: {name: Digital Asset Companies, selection: {symbols: [COIN, HOOD]}, weighting: equal, minimum_constituents: 2}
+  banking: {name: Banking, selection: {symbols: [JPM, BAC, GS]}, weighting: equal, minimum_constituents: 2}
+  defense: {name: Defense, selection: {symbols: [PLTR, LMT, RTX]}, weighting: equal, minimum_constituents: 2}
+  healthcare: {name: Healthcare, selection: {symbols: [LLY, UNH, NVO]}, weighting: equal, minimum_constituents: 2}
+  energy: {name: Energy, selection: {symbols: [XOM, CVX, OIL]}, weighting: equal, minimum_constituents: 2}
+  clean_energy: {name: Clean Energy, selection: {symbols: [TSLA, FSLR, ENPH]}, weighting: equal, minimum_constituents: 2}
+  automotive: {name: Automotive, selection: {symbols: [TSLA, GM, F]}, weighting: equal, minimum_constituents: 2}
+  space: {name: Space, selection: {symbols: [SPACE, RKLB, ASTS]}, weighting: equal, minimum_constituents: 2}
+  precious_metals: {name: Precious Metals, selection: {symbols: [GOLD, SILVER, PAXG]}, weighting: equal, minimum_constituents: 2}
+  us_equity_indices: {name: US Equity Indices, selection: {symbols: [XYZ100, SPX]}, weighting: equal, minimum_constituents: 2}
+  asian_equity_indices: {name: Asian Equity Indices, selection: {symbols: [NIKKEI, HSI]}, weighting: equal, minimum_constituents: 1}
+  ai_everywhere: {name: AI Everywhere, selection: {symbols: [NVDA, AMD, PLTR, TAO, RENDER, FET]}, weighting: equal, minimum_constituents: 4}
+  digital_assets: {name: Digital Assets, selection: {symbols: [BTC, ETH, COIN, HOOD]}, weighting: equal, minimum_constituents: 3}
+  risk_on: {name: Risk On, selection: {symbols: [XYZ100, BTC, ETH, SOL]}, weighting: equal, minimum_constituents: 3}
+  store_of_value: {name: Store of Value, selection: {symbols: [BTC, GOLD, PAXG]}, weighting: equal, minimum_constituents: 2}
+  inflation_hedge: {name: Inflation Hedge, selection: {symbols: [BTC, GOLD, OIL]}, weighting: equal, minimum_constituents: 2}
+  us_tech_and_crypto: {name: US Tech and Crypto, selection: {symbols: [XYZ100, NVDA, MSFT, BTC, ETH]}, weighting: equal, minimum_constituents: 4}
+
