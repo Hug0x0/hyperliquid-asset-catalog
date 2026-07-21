@@ -77,6 +77,22 @@ class BasketResult(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
+class BenchmarkResult(BaseModel):
+    benchmark_id: str
+    name: str
+    status: Literal["sufficient", "concentrated", "insufficient"]
+    requested_symbols: list[str]
+    available_symbols: list[str]
+    missing_symbols: list[str]
+    unique_constituents: int
+    coverage_ratio: float
+    total_volume_24h_usd: Decimal
+    total_open_interest_usd: Decimal
+    countries: list[str]
+    constituents: list[dict[str, Any]]
+    warnings: list[str] = Field(default_factory=list)
+
+
 class RunReport(BaseModel):
     retrieved_at: str
     endpoints: list[str]

@@ -9,6 +9,7 @@ from typing import Annotated
 import typer
 
 from .basket_engine import build_baskets as evaluate_baskets
+from .benchmark_engine import build_sector_benchmarks, export_benchmark_report
 from .classification import Classifier
 from .config import Settings
 from .discovery import discover_catalog
@@ -109,6 +110,21 @@ def build_baskets(output_dir: Path = Path("output")) -> None:
     atomic_json(output_dir / "available_baskets.json", available)
     atomic_json(output_dir / "unavailable_baskets.json", unavailable)
     typer.echo(f"Built {len(results)} basket evaluations")
+
+
+@app.command("build-benchmarks")
+def build_benchmarks(output_dir: Path = Path("output")) -> None:
+    """Evaluate deduplicated non-crypto sector benchmark depth."""
+    results = build_sector_benchmarks(_load(output_dir), ROOT / "config/benchmark_definitions.yaml")
+    export_benchmark_report(results, output_dir)
+    counts = {
+        status: sum(result.status == status for result in results)
+        for status in ("sufficient", "concentrated", "insufficient")
+    }
+    typer.echo(
+        f"Built {len(results)} benchmarks: {counts['sufficient']} sufficient, "
+        f"{counts['concentrated']} concentrated, {counts['insufficient']} insufficient"
+    )
 
 
 @app.command()

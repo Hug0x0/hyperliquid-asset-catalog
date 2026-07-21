@@ -24,6 +24,7 @@ hl-catalog fetch --market-type spot
 hl-catalog fetch --asset-class equity --tag semiconductors
 hl-catalog validate
 hl-catalog build-baskets
+hl-catalog build-benchmarks
 hl-catalog export --format csv
 ```
 
@@ -56,6 +57,11 @@ evaluations. Outputs and caches are deliberately excluded from Git.
 instruments; crypto, spot crypto and unknown instruments are excluded. `non_crypto_by_country.json`
 groups the same instruments by reference country. Cross-country commodities use `Global`, while
 pre-IPO instruments without a single listed home market use `Pre-IPO / Global`.
+
+`build-benchmarks` deduplicates identical underlyings across DEXs by selecting the market with the
+highest 24-hour volume (then open interest), and generates `sector_benchmark_report.json` plus CSV.
+Five or more unique constituents is `sufficient`, three or four is `concentrated`, and fewer than
+three is `insufficient`. Definitions are editable in `config/benchmark_definitions.yaml`.
 
 ## Verification
 
