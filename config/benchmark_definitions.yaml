@@ -1,0 +1,55 @@
+sufficient_constituents: 5
+concentrated_constituents: 3
+
+benchmarks:
+  semiconductors:
+    name: Semiconductors
+    symbols: [NVDA, AMD, INTC, TSM, ASML, ARM, AVGO, AMAT, MU, MRVL, QCOM, LRCX, COHR, CRDO, LITE, WDC, SNDK]
+  big_tech:
+    name: Big Tech
+    symbols: [AAPL, MSFT, NVDA, AMZN, META, GOOGL, TSLA, ORCL, IBM, NFLX]
+  artificial_intelligence:
+    name: Artificial Intelligence
+    symbols: [NVDA, AMD, MSFT, GOOGL, META, PLTR, ORCL, NBIS, CRWV, OPENAI, ANTHROPIC]
+  defense:
+    name: Defense
+    symbols: [PLTR, RTX, DEFENSE]
+  banking_fintech:
+    name: Banking and Fintech
+    symbols: [COIN, HOOD, CRCL, BX]
+  energy:
+    name: Energy
+    symbols: [OIL, USOIL, BRENTOIL, WTI, NATGAS, GAS, TTF, XLE, USENERGY, URANIUM, URNM]
+  precious_metals:
+    name: Precious Metals
+    symbols: [GOLD, SILVER, PLATINUM, PALLADIUM, GOLDJM, SILVERJM, GLDMINE]
+  industrial_metals:
+    name: Industrial Metals
+    symbols: [COPPER, ALUMINIUM]
+  agriculture:
+    name: Agriculture
+    symbols: [CORN, WHEAT, SOY]
+  automotive:
+    name: Automotive
+    symbols: [TSLA, RIVN, HYUNDAI, CAR, XIAOMI]
+  biotech_healthcare:
+    name: Biotech and Healthcare
+    symbols: [LLY, HIMS, BIOTECH]
+  space:
+    name: Space
+    symbols: [RKLB, SPACEX, SPCX]
+  us_equity_indices:
+    name: US Equity Indices
+    symbols: [SP500, USA500, US500, XYZ100, USA100, USTECH, SMALL2000, H100]
+  asian_equity_indices:
+    name: Asian Equity Indices
+    symbols: [JP225, JPN225, KR200, NIFTY, IBOV, EWJ, EWT, EWY, KWEB]
+  pre_ipo:
+    name: Pre-IPO
+    symbols: [OPENAI, ANTHROPIC, SPACEX, SPCX, CXMT, GIGADEV, MINIMAX, PURRDAT, SHAZ, SKHX, SKHY]
+  forex:
+    name: Foreign Exchange
+    symbols: [EUR, GBP, JPY, KRW, DXY]
+  volatility:
+    name: Volatility
+    symbols: [VIX, VOL]
