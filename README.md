@@ -52,6 +52,11 @@ The `output/` directory contains the complete JSON/CSV catalog, native/HIP-3/XYZ
 subsets, a run report and catalog diff. `build-baskets` adds available and unavailable basket
 evaluations. Outputs and caches are deliberately excluded from Git.
 
+`non_crypto_assets.json` and `non_crypto_assets.csv` contain only explicitly classified TradFi
+instruments; crypto, spot crypto and unknown instruments are excluded. `non_crypto_by_country.json`
+groups the same instruments by reference country. Cross-country commodities use `Global`, while
+pre-IPO instruments without a single listed home market use `Pre-IPO / Global`.
+
 ## Verification
 
 ```bash
@@ -65,4 +70,3 @@ Official references: [Info endpoint](https://hyperliquid.gitbook.io/hyperliquid-
 [perpetuals](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint/perpetuals),
 [spot](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint/spot), and
 [asset IDs](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/asset-ids).
-

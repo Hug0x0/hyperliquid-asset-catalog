@@ -17,6 +17,13 @@ class Classifier:
             str(tag): {str(s).upper() for s in symbols}
             for tag, symbols in dict(raw.get("tag_groups", {})).items()
         }
+        self.asset_class_groups: dict[str, set[str]] = {
+            str(asset_class): {str(s).upper() for s in symbols}
+            for asset_class, symbols in dict(raw.get("asset_class_groups", {})).items()
+        }
+        self.country_groups: dict[str, dict[str, Any]] = {
+            str(country): value for country, value in dict(raw.get("country_groups", {})).items()
+        }
 
     def classify(self, instrument: Instrument) -> Instrument:
         symbol = instrument.canonical_symbol.upper()
@@ -26,6 +33,8 @@ class Classifier:
             instrument.asset_class = manual.get("asset_class", instrument.asset_class)
             instrument.display_name = manual.get("display_name", instrument.display_name)
             instrument.subcategory = manual.get("subcategory", instrument.subcategory)
+            instrument.country = manual.get("country", instrument.country)
+            instrument.country_code = manual.get("country_code", instrument.country_code)
             instrument.underlying_symbol = manual.get(
                 "underlying_symbol", instrument.underlying_symbol
             )
@@ -48,12 +57,30 @@ class Classifier:
             instrument.asset_class = "commodity"
         elif symbol.endswith(("100", "500")):
             instrument.asset_class = "equity_index"
+        if instrument.market_type == "perp" and instrument.dex != "native":
+            for asset_class, symbols in self.asset_class_groups.items():
+                if symbol in symbols:
+                    instrument.asset_class = valid_asset_class(asset_class)
+            for country, rule in self.country_groups.items():
+                symbols = {str(s).upper() for s in rule.get("symbols", [])}
+                if symbol in symbols:
+                    instrument.country = country
+                    instrument.country_code = rule.get("code")
         for tag, symbols in self.tag_groups.items():
             if symbol in symbols or clean in symbols:
                 instrument.tags.append(tag)
         instrument.tags = sorted(set(instrument.tags))
         if instrument.is_pre_ipo:
             instrument.asset_class = "pre_ipo"
+        if instrument.market_type == "spot":
+            instrument.asset_class = "spot_crypto"
+            instrument.country = None
+            instrument.country_code = None
+        elif instrument.dex == "native":
+            instrument.asset_class = "crypto"
+            instrument.is_pre_ipo = False
+            instrument.country = None
+            instrument.country_code = None
         return instrument
 
 

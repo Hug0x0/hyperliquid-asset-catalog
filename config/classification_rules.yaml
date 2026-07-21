@@ -33,3 +33,51 @@ tag_groups:
   rwa: [ONDO, PAXG, POLYX]
   hyperliquid_ecosystem: [HYPE, PURR, HFUN, LIT]
 
+# Explicit, auditable HIP-3 TradFi classification. Symbols absent from these groups stay unknown
+# and are excluded from the non-crypto catalog.
+asset_class_groups:
+  equity: [AAPL, AMAT, AMD, AMZN, ARM, ASML, AVGO, BABA, BB, BE, BIRD, BMNR, BX, COHR, COIN, COST, CRCL, CRDO, CRWV, DELL, DKNG, EBAY, GEV, GLW, GME, GOOGL, HIMS, HOOD, HYUNDAI, IBM, IBIDEN, INTC, KIOXIA, LITE, LLY, LRCX, META, MINIMAX, MRVL, MSFT, MSTR, MU, NBIS, NET, NFLX, NOW, NVDA, ORCL, PLTR, QCOM, RIVN, RKLB, SMSN, SNDK, SOFTBANK, TSM, WDC, XIAOMI, ZHIPU, ZM]
+  equity_index: [BIOTECH, BOT, CAR, CBRS, DEFENSE, DRAM, ENERGY, EWJ, EWT, EWY, EWZ, H100, IBOV, INFOTECH, JP225, JPN225, KR200, KSTR, KWEB, MAG7, NIFTY, NUCLEAR, QNT, ROBOT, SEMI, SEMIS, SMH, SMALL2000, SP500, URNM, USA100, USA500, USENERGY, USTECH, XLE, XYZ100]
+  commodity: [ALUMINIUM, BRENTOIL, CL, COPPER, CORN, GAS, GOLD, GOLDJM, GLDMINE, NATGAS, OIL, PALLADIUM, PLATINUM, SILVER, SILVERJM, SOY, TTF, URANIUM, USOIL, WHEAT, WTI]
+  forex: [DXY, EUR, GBP, JPY, KRW]
+  interest_rate: [USBOND]
+  volatility_index: [VIX, VOL]
+  pre_ipo: [ANTHROPIC, CXMT, GIGADEV, OPENAI, PURRDAT, SHAZ, SKHX, SKHY, SPACEX, SPCX, STRC]
+
+country_groups:
+  United States:
+    code: US
+    symbols: [AAPL, AMAT, AMD, AMZN, AVGO, BB, BE, BIRD, BIOTECH, BMNR, BOT, BX, CAR, CBRS, COHR, COIN, COST, CRCL, CRDO, CRWV, DEFENSE, DELL, DKNG, DRAM, DXY, EBAY, ENERGY, GEV, GLW, GME, GOOGL, H100, HIMS, HOOD, IBM, INFOTECH, INTC, LITE, LLY, LRCX, MAG7, META, MRVL, MSFT, MSTR, MU, NBIS, NET, NFLX, NOW, NUCLEAR, NVDA, ORCL, PLTR, QCOM, QNT, RIVN, RKLB, ROBOT, SEMI, SEMIS, SMH, SMALL2000, SNDK, SP500, SPCX, STRC, TSLA, URNM, US500, USA100, USA500, USBOND, USENERGY, USTECH, WDC, XLE, XYZ100, ZM]
+  China:
+    code: CN
+    symbols: [BABA, CXMT, GIGADEV, KWEB, MINIMAX, PURRDAT, SHAZ, XIAOMI, ZHIPU]
+  Japan:
+    code: JP
+    symbols: [EWJ, IBIDEN, JP225, JPN225, JPY, KIOXIA, SOFTBANK]
+  South Korea:
+    code: KR
+    symbols: [EWY, HYUNDAI, KR200, KRW, KSTR, SKHX, SKHY, SMSN]
+  Taiwan:
+    code: TW
+    symbols: [EWT, TSM]
+  Brazil:
+    code: BR
+    symbols: [EWZ, IBOV]
+  India:
+    code: IN
+    symbols: [NIFTY]
+  Netherlands:
+    code: NL
+    symbols: [ASML]
+  United Kingdom:
+    code: GB
+    symbols: [ARM, GBP]
+  Eurozone:
+    code: EU
+    symbols: [EUR]
+  Global:
+    code: GL
+    symbols: [ALUMINIUM, BRENTOIL, CL, COPPER, CORN, GAS, GLDMINE, GOLD, GOLDJM, NATGAS, OIL, PALLADIUM, PLATINUM, SILVER, SILVERJM, SOY, TTF, URANIUM, USOIL, VIX, VOL, WHEAT, WTI]
+  Pre-IPO / Global:
+    code: XG
+    symbols: [ANTHROPIC, OPENAI, SPACEX]
