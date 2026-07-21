@@ -56,15 +56,15 @@ def export_catalog(
         loaded = json.loads(all_path.read_text(encoding="utf-8"))
         previous = loaded if isinstance(loaded, list) else []
     diff = catalog_diff(previous, current)
+    non_crypto = [a for a in assets if a.asset_class not in {"crypto", "spot_crypto", "unknown"}]
     groups = {
         "all_assets.json": assets,
         "hyperliquid_native_perps.json": [a for a in assets if a.dex == "native"],
         "hip3_assets.json": [a for a in assets if a.market_type == "perp" and a.dex != "native"],
         "xyz_assets.json": [a for a in assets if a.dex == "xyz"],
         "spot_assets.json": [a for a in assets if a.market_type == "spot"],
-        "tradfi_assets.json": [
-            a for a in assets if a.asset_class not in {"crypto", "spot_crypto", "unknown"}
-        ],
+        "tradfi_assets.json": non_crypto,
+        "non_crypto_assets.json": non_crypto,
         "crypto_assets.json": [a for a in assets if a.asset_class in {"crypto", "spot_crypto"}],
         "unknown_assets.json": [a for a in assets if a.asset_class == "unknown"],
     }
@@ -72,6 +72,18 @@ def export_catalog(
         atomic_json(
             output_dir / filename, serialized(subset, include_raw=include_raw), pretty=pretty
         )
+    by_country: dict[str, list[dict[str, Any]]] = {}
+    for asset in non_crypto:
+        country = asset.country or "Unclassified"
+        by_country.setdefault(country, []).append(asset.model_dump(mode="python"))
+    country_catalog = {
+        country: {
+            "count": len(items),
+            "assets": sorted(items, key=lambda item: (item["canonical_symbol"], item["dex"])),
+        }
+        for country, items in sorted(by_country.items())
+    }
+    atomic_json(output_dir / "non_crypto_by_country.json", country_catalog, pretty=pretty)
     atomic_json(output_dir / "catalog_diff.json", diff, pretty=pretty)
     rows = serialized(assets, include_raw=False)
     with (output_dir / "all_assets.csv").open("w", newline="", encoding="utf-8") as handle:
@@ -79,6 +91,24 @@ def export_catalog(
         if rows:
             writer.writeheader()
             for row in rows:
+                writer.writerow(
+                    {
+                        k: "|".join(map(str, v))
+                        if isinstance(v, list)
+                        else json.dumps(v, default=json_default)
+                        if isinstance(v, dict)
+                        else v
+                        for k, v in row.items()
+                    }
+                )
+    non_crypto_rows = serialized(non_crypto, include_raw=False)
+    with (output_dir / "non_crypto_assets.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle, fieldnames=list(non_crypto_rows[0]) if non_crypto_rows else []
+        )
+        if non_crypto_rows:
+            writer.writeheader()
+            for row in non_crypto_rows:
                 writer.writerow(
                     {
                         k: "|".join(map(str, v))

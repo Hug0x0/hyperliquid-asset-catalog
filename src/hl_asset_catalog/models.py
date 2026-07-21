@@ -31,6 +31,8 @@ class Instrument(BaseModel):
     market_type: Literal["perp", "spot"]
     asset_class: AssetClass = "unknown"
     subcategory: str | None = None
+    country: str | None = None
+    country_code: str | None = None
     tags: list[str] = Field(default_factory=list)
     quote_currency: str | None = None
     underlying_symbol: str | None = None
