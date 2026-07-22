@@ -98,3 +98,34 @@ class HyperliquidClient:
         if not isinstance(data, list):
             raise HyperliquidAPIError("spotMetaAndAssetCtxs returned a non-list")
         return data
+
+    async def candle_snapshot(
+        self,
+        coin: str,
+        *,
+        interval: str,
+        start_time: int,
+        end_time: int,
+        force_refresh: bool = False,
+    ) -> list[dict[str, Any]]:
+        data = await self.post(
+            {
+                "type": "candleSnapshot",
+                "req": {
+                    "coin": coin,
+                    "interval": interval,
+                    "startTime": start_time,
+                    "endTime": end_time,
+                },
+            },
+            force_refresh=force_refresh,
+        )
+        if not isinstance(data, list):
+            raise HyperliquidAPIError("candleSnapshot returned a non-list")
+        return [item for item in data if isinstance(item, dict)]
+
+    async def l2_book(self, coin: str, *, force_refresh: bool = False) -> dict[str, Any]:
+        data = await self.post({"type": "l2Book", "coin": coin}, force_refresh=force_refresh)
+        if not isinstance(data, dict):
+            raise HyperliquidAPIError("l2Book returned a non-object")
+        return data
