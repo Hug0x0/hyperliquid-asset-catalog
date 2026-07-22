@@ -7,7 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from .models import BenchmarkResult, MarketAnalytics
+from .models import BenchmarkResult, Instrument, MarketAnalytics
 from .utils import atomic_json
 
 
@@ -93,6 +93,8 @@ def _money(value: Decimal | int | float) -> str:
 def generate_medium_article(
     quality_rows: list[dict[str, Any]],
     analytics: list[MarketAnalytics],
+    assets: list[Instrument],
+    correlations: dict[str, dict[str, float | None]],
     *,
     total_non_crypto: int,
     lookback_days: int,
@@ -105,7 +107,34 @@ def generate_medium_article(
         key=lambda item: item.annualized_volatility_pct or 0,
         reverse=True,
     )[:5]
-    best = quality_rows[:8]
+    with_monthly_returns = [item for item in analytics if item.return_30d_pct is not None]
+    winners = sorted(with_monthly_returns, key=lambda item: item.return_30d_pct or 0, reverse=True)[
+        :5
+    ]
+    losers = sorted(with_monthly_returns, key=lambda item: item.return_30d_pct or 0)[:5]
+    non_crypto = [
+        asset for asset in assets if asset.asset_class not in {"crypto", "spot_crypto", "unknown"}
+    ]
+    class_counts = Counter(asset.asset_class for asset in non_crypto)
+    country_counts = Counter(asset.country or "Unclassified" for asset in non_crypto)
+    executable = sorted(
+        (
+            item
+            for item in analytics
+            if item.buy_slippage_10k_bps is not None and item.sell_slippage_10k_bps is not None
+        ),
+        key=lambda item: ((item.buy_slippage_10k_bps or 0) + (item.sell_slippage_10k_bps or 0)) / 2,
+    )[:10]
+    correlation_pairs = sorted(
+        (
+            (left, right, value)
+            for left, row in correlations.items()
+            for right, value in row.items()
+            if left < right and value is not None
+        ),
+        key=lambda pair: abs(pair[2]),
+        reverse=True,
+    )[:10]
     generated = datetime.now(UTC).strftime("%B %d, %Y")
     lines = [
         "# Hyperliquid Beyond Crypto: Which TradFi Benchmarks Can We Actually Build?",
@@ -129,22 +158,52 @@ def generate_medium_article(
         "annualized volatility, maximum drawdown, historical 95% VaR, spread, depth within 10 "
         "basis points, and estimated slippage for a $10,000 order.",
         "",
-        "## Five Themes Already Have Sufficient Breadth",
+        "### Universe by asset class",
         "",
-        f"Of the 17 benchmarks, **{status_counts['sufficient']} have sufficient breadth**, "
-        f"**{status_counts['concentrated']} remain concentrated**, and "
-        f"**{status_counts['insufficient']} are insufficient**. We require at least five unique "
-        "constituents before considering a benchmark sufficiently diversified.",
-        "",
-        "| Benchmark | Constituents | Coverage | Score | Grade | 24h Volume | Open Interest |",
-        "|---|---:|---:|---:|:---:|---:|---:|",
+        "| Asset class | Contracts | Share of non-crypto catalog |",
+        "|---|---:|---:|",
     ]
-    for row in best:
+    for asset_class, count in class_counts.most_common():
         lines.append(
-            f"| {row['name']} | {row['unique_constituents']} | "
+            f"| {asset_class.replace('_', ' ').title()} | {count} | "
+            f"{count / len(non_crypto) * 100:.1f}% |"
+        )
+    lines.extend(
+        [
+            "",
+            "### Geographic distribution",
+            "",
+            "The country field refers to the underlying reference market. Global commodities "
+            "are kept in a separate bucket rather than assigned to a single country.",
+            "",
+            "| Reference country or region | Contracts |",
+            "|---|---:|",
+        ]
+    )
+    for country, count in country_counts.most_common():
+        lines.append(f"| {country} | {count} |")
+    lines.extend(
+        [
+            "",
+            "## Five Themes Already Have Sufficient Breadth",
+            "",
+            f"Of the 17 benchmarks, **{status_counts['sufficient']} have sufficient breadth**, "
+            f"**{status_counts['concentrated']} remain concentrated**, and "
+            f"**{status_counts['insufficient']} are insufficient**. We require at least five "
+            "unique "
+            "constituents before considering a benchmark sufficiently diversified.",
+            "",
+            "| Benchmark | Status | Constituents | Measured | Coverage | Score | Grade | "
+            "24h Volume |",
+            "|---|---|---:|---:|---:|---:|:---:|---:|",
+        ]
+    )
+    for row in quality_rows:
+        lines.append(
+            f"| {row['name']} | {row['status']} | {row['unique_constituents']} | "
+            f"{row['measured_constituents']} | "
             f"{row['coverage_ratio'] * 100:.0f}% | {row['quality_score']:.1f} | "
-            f"{row['grade']} | {_money(row['total_volume_24h_usd'])} | "
-            f"{_money(row['total_open_interest_usd'])} |"
+            f"{row['grade']} | {_money(row['total_volume_24h_usd'])} |"
         )
     lines.extend(
         [
@@ -169,6 +228,45 @@ def generate_medium_article(
     lines.extend(
         [
             "",
+            "## Execution Quality: What a $10,000 Order Might Face",
+            "",
+            "Displayed volume alone does not guarantee execution quality. We therefore estimate "
+            "the cost of immediately buying or selling $10,000 against the visible L2 book. "
+            "These figures are static snapshots: they exclude latency, hidden liquidity, adverse "
+            "selection, and the market's reaction to the order.",
+            "",
+            "| Asset | DEX | Spread | Buy slippage | Sell slippage | Bid depth ±10bps | "
+            "Ask depth ±10bps |",
+            "|---|---|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for item in executable:
+        lines.append(
+            f"| {item.symbol} | {item.dex} | {(item.spread_bps or 0):.2f} bps | "
+            f"{(item.buy_slippage_10k_bps or 0):.2f} bps | "
+            f"{(item.sell_slippage_10k_bps or 0):.2f} bps | "
+            f"{_money(item.bid_depth_10bps_usd or 0)} | "
+            f"{_money(item.ask_depth_10bps_usd or 0)} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Correlation Clusters Matter for Diversification",
+            "",
+            "A benchmark with many names can still be economically concentrated if its members "
+            "move together. The table below shows the strongest absolute daily-return correlations "
+            "in the analyzed sample. Correlations are indicative because markets may follow "
+            "different trading calendars and the available history is limited.",
+            "",
+            "| Asset A | Asset B | Daily-return correlation |",
+            "|---|---|---:|",
+        ]
+    )
+    for left, right, value in correlation_pairs:
+        lines.append(f"| {left} | {right} | {value:.3f} |")
+    lines.extend(
+        [
+            "",
             "## Risk Remains Highly Uneven",
             "",
             "The most volatile assets in the sample should not receive the same weight as a major "
@@ -188,6 +286,39 @@ def generate_medium_article(
     lines.extend(
         [
             "",
+            "### Recent 30-day dispersion",
+            "",
+            "The gap between recent winners and losers illustrates why benchmark construction "
+            "needs diversification and rebalancing rules rather than discretionary ticker picking.",
+            "",
+            "| Strongest 30-day returns | Return | Weakest 30-day returns | Return |",
+            "|---|---:|---|---:|",
+        ]
+    )
+    for winner, loser in zip(winners, losers, strict=False):
+        lines.append(
+            f"| {winner.symbol} | {(winner.return_30d_pct or 0):.1f}% | "
+            f"{loser.symbol} | {(loser.return_30d_pct or 0):.1f}% |"
+        )
+    lines.extend(
+        [
+            "",
+            "## How the Benchmark Quality Score Works",
+            "",
+            "The 0–100 score is intentionally conservative. It combines four components:",
+            "",
+            "- **35% breadth:** the number of unique active constituents, capped at ten;",
+            "- **20% coverage:** the share of the target definition currently available;",
+            "- **25% liquidity:** the average liquidity score of measured constituents, "
+            "penalized when detailed analytics cover only part of the benchmark;",
+            "- **20% data quality:** historical and order-book completeness, using the same "
+            "measured-coverage penalty.",
+            "",
+            "Grades are A for scores of 80 or above, B from 65 to 79.9, C from 50 to 64.9, "
+            "and D below 50. Breadth status and quality grade answer different questions: a theme "
+            "may contain five names yet still receive a weak grade if liquidity or measured data "
+            "coverage is poor.",
+            "",
             "## What This Means for an Investable Product",
             "",
             "A benchmark should not be considered investable based on ticker count alone. It needs "
@@ -198,6 +329,22 @@ def generate_medium_article(
             "The next step is to retain a daily history of these metrics, measure their stability, "
             "and simulate rebalancing, turnover, and transaction costs. The technical availability "
             "of a contract is not the same thing as sustainable execution capacity.",
+            "",
+            "### Practical construction rules",
+            "",
+            "A first production methodology could impose the following controls:",
+            "",
+            "1. Require at least five active, unique underlyings and cap any constituent at 25%.",
+            "2. Exclude markets below explicit 24-hour volume, open-interest, depth, and "
+            "data-quality thresholds.",
+            "3. Prefer liquidity weighting with constituent caps; use equal weighting only "
+            "when execution quality is comparable.",
+            "4. Rebalance on a predictable schedule and add a buffer zone to reduce "
+            "unnecessary turnover.",
+            "5. Suspend additions when the reference market is closed, the oracle is stale, "
+            "or spreads exceed a defined ceiling.",
+            "6. Maintain a fallback DEX mapping for duplicate underlyings, but never switch "
+            "venues without validating margin and oracle differences.",
             "",
             "## Methodology and Limitations",
             "",
