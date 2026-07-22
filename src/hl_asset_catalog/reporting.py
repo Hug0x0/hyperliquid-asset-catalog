@@ -82,7 +82,7 @@ def export_benchmark_quality(rows: list[dict[str, Any]], output_dir: Path) -> No
 def _money(value: Decimal | int | float) -> str:
     number = float(value)
     if number >= 1_000_000_000:
-        return f"${number / 1_000_000_000:.2f} Md"
+        return f"${number / 1_000_000_000:.2f}B"
     if number >= 1_000_000:
         return f"${number / 1_000_000:.2f} M"
     if number >= 1_000:
@@ -106,54 +106,37 @@ def generate_medium_article(
         reverse=True,
     )[:5]
     best = quality_rows[:8]
-    now = datetime.now(UTC)
-    months = [
-        "janvier",
-        "février",
-        "mars",
-        "avril",
-        "mai",
-        "juin",
-        "juillet",
-        "août",
-        "septembre",
-        "octobre",
-        "novembre",
-        "décembre",
-    ]
-    generated = f"{now.day} {months[now.month - 1]} {now.year}"
+    generated = datetime.now(UTC).strftime("%B %d, %Y")
     lines = [
-        "# Hyperliquid au-delà de la crypto : quels benchmarks TradFi "
-        "peut-on vraiment construire ?",
+        "# Hyperliquid Beyond Crypto: Which TradFi Benchmarks Can We Actually Build?",
         "",
-        f"*Analyse générée le {generated} à partir des marchés publics Hyperliquid.*",
+        f"*Analysis generated on {generated} from public Hyperliquid market data.*",
         "",
-        "Hyperliquid n’est plus seulement un terrain de jeu pour les perpetuals crypto. "
-        "L’essor des marchés HIP-3 ouvre l’accès à des actions, indices, matières premières, "
-        "devises et actifs pre-IPO. Mais une liste de tickers ne suffit pas : pour construire "
-        "un benchmark crédible, il faut de la profondeur, de la liquidité et des données fiables.",
+        "Hyperliquid is no longer only a venue for crypto perpetuals. The expansion of HIP-3 "
+        "markets now provides access to equities, indices, commodities, currencies, and pre-IPO "
+        "assets. But a list of tickers is not enough: a credible benchmark also requires market "
+        "depth, liquidity, diversification, and reliable data.",
         "",
-        "## Ce que nous avons mesuré",
+        "## What We Measured",
         "",
-        f"Le catalogue contient **{total_non_crypto} contrats non-crypto**. Après déduplication "
-        "des mêmes sous-jacents entre DEX, nous avons évalué 17 thèmes. Le marché retenu pour "
-        "chaque ticker est celui affichant le meilleur volume 24 h, puis le meilleur "
-        "open interest.",
+        f"The catalog contains **{total_non_crypto} non-crypto contracts**. After deduplicating "
+        "identical underlyings listed on multiple DEXs, we evaluated 17 themes. For each ticker, "
+        "we retained the market with the highest 24-hour volume, using open interest as the "
+        "secondary selection criterion.",
         "",
-        f"Pour les {len(analytics)} marchés les plus liquides, l’étude combine "
-        f"{lookback_days} jours de bougies quotidiennes "
-        "avec un instantané du carnet L2 : rendements, volatilité annualisée, drawdown maximal, "
-        "VaR historique à 95 %, spread, profondeur à 10 points de base et slippage "
-        "estimé pour $10k.",
+        f"For the {len(analytics)} most liquid markets, the study combines {lookback_days} days "
+        "of daily candles with an L2 order book snapshot. The resulting metrics include returns, "
+        "annualized volatility, maximum drawdown, historical 95% VaR, spread, depth within 10 "
+        "basis points, and estimated slippage for a $10,000 order.",
         "",
-        "## Résultat : cinq thèmes ont déjà une profondeur suffisante",
+        "## Five Themes Already Have Sufficient Breadth",
         "",
-        f"Sur 17 benchmarks, **{status_counts['sufficient']} sont suffisants**, "
-        f"**{status_counts['concentrated']} concentrés** et "
-        f"**{status_counts['insufficient']} insuffisants**. Le seuil retenu est de cinq "
-        "constituants uniques pour un benchmark suffisamment diversifié.",
+        f"Of the 17 benchmarks, **{status_counts['sufficient']} have sufficient breadth**, "
+        f"**{status_counts['concentrated']} remain concentrated**, and "
+        f"**{status_counts['insufficient']} are insufficient**. We require at least five unique "
+        "constituents before considering a benchmark sufficiently diversified.",
         "",
-        "| Benchmark | Constituants | Couverture | Score | Grade | Volume 24 h | Open interest |",
+        "| Benchmark | Constituents | Coverage | Score | Grade | 24h Volume | Open Interest |",
         "|---|---:|---:|---:|:---:|---:|---:|",
     ]
     for row in best:
@@ -166,19 +149,18 @@ def generate_medium_article(
     lines.extend(
         [
             "",
-            "Les semi-conducteurs, la Big Tech et l’intelligence artificielle ressortent comme "
-            "les univers les plus naturels. Ils combinent davantage de sous-jacents et une "
-            "meilleure "
-            "probabilité de trouver plusieurs marchés activement négociés.",
+            "Semiconductors, Big Tech, and artificial intelligence emerge as the most natural "
+            "universes. They combine broader constituent sets with a higher probability of "
+            "finding several actively traded markets.",
             "",
-            "## Les marchés offrant la meilleure liquidité observée",
+            "## The Most Liquid Markets in the Snapshot",
             "",
-            "| Actif | DEX | Score de liquidité | Volume 24 h | Open interest | Spread |",
+            "| Asset | DEX | Liquidity Score | 24h Volume | Open Interest | Spread |",
             "|---|---|---:|---:|---:|---:|",
         ]
     )
     for item in liquid:
-        spread = f"{item.spread_bps:.1f} bps" if item.spread_bps is not None else "n/d"
+        spread = f"{item.spread_bps:.1f} bps" if item.spread_bps is not None else "n/a"
         lines.append(
             f"| {item.symbol} | {item.dex} | {item.liquidity_score:.1f} | "
             f"{_money(item.volume_24h_usd or 0)} | "
@@ -187,14 +169,14 @@ def generate_medium_article(
     lines.extend(
         [
             "",
-            "## Le risque reste très hétérogène",
+            "## Risk Remains Highly Uneven",
             "",
-            "Les actifs les plus volatils de l’échantillon ne doivent pas recevoir le même poids "
-            "qu’un grand indice ou qu’une action liquide sans contrôle de risque. Une pondération "
-            "équipondérée est facile à expliquer, mais une approche plafonnée par liquidité ou par "
-            "volatilité est généralement plus robuste pour un produit synthétique.",
+            "The most volatile assets in the sample should not receive the same weight as a major "
+            "index or a liquid large-cap equity without additional risk controls. Equal weighting "
+            "is easy to explain, but a liquidity-capped or volatility-aware methodology is usually "
+            "more robust for a synthetic product.",
             "",
-            "| Actif | Volatilité annualisée | Drawdown maximal | VaR 95 % quotidienne |",
+            "| Asset | Annualized Volatility | Maximum Drawdown | Daily 95% VaR |",
             "|---|---:|---:|---:|",
         ]
     )
@@ -206,38 +188,34 @@ def generate_medium_article(
     lines.extend(
         [
             "",
-            "## Ce que cela implique pour un produit investissable",
+            "## What This Means for an Investable Product",
             "",
-            "Un benchmark ne devrait pas être déclaré investissable sur le seul nombre de tickers. "
-            "Il faut imposer un volume minimal, un spread maximal, une profondeur suffisante pour "
-            "la taille visée et un mécanisme de repli lorsqu’un marché est suspendu. Les thèmes "
-            "concentrés peuvent servir d’indicateurs exploratoires, mais pas encore de références "
-            "largement diversifiées.",
+            "A benchmark should not be considered investable based on ticker count alone. It needs "
+            "minimum volume requirements, a maximum acceptable spread, sufficient depth for the "
+            "intended trade size, and fallback rules when a market is suspended. Concentrated "
+            "themes may be useful exploratory indicators, but they are not yet broad references.",
             "",
-            "La prochaine étape consiste à conserver un historique quotidien de ces métriques afin "
-            "de mesurer leur stabilité, puis à simuler les rebalancements, le turnover et "
-            "les coûts "
-            "de transaction. La disponibilité technique d’un contrat n’est pas équivalente à une "
-            "capacité d’exécution durable.",
+            "The next step is to retain a daily history of these metrics, measure their stability, "
+            "and simulate rebalancing, turnover, and transaction costs. The technical availability "
+            "of a contract is not the same thing as sustainable execution capacity.",
             "",
-            "## Méthodologie et limites",
+            "## Methodology and Limitations",
             "",
-            "Les données proviennent de l’API publique Hyperliquid et représentent un instantané. "
-            "Les estimations de slippage utilisent le carnet visible et ignorent l’impact "
-            "dynamique. "
-            "La volatilité est annualisée sur 252 séances à partir des rendements quotidiens. Le "
-            "funding est annualisé à titre indicatif à partir du taux horaire courant. "
-            "Aucun market cap n’est inventé : une pondération par capitalisation nécessiterait "
-            "une source externe fiable.",
+            "The data comes from the public Hyperliquid API and represents a point-in-time "
+            "snapshot. "
+            "Slippage estimates use the visible order book and do not model dynamic market impact. "
+            "Volatility is annualized over 252 trading sessions from daily returns. Funding is "
+            "annualized for illustration from the current hourly rate. We do not fabricate market "
+            "capitalization data; market-cap weighting would require a reliable external source.",
             "",
-            "Sources techniques : [Info endpoint Hyperliquid]"
+            "Technical sources: [Hyperliquid Info endpoint]"
             "(https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint) "
-            "et [limites de taux]"
+            "and [rate limits]"
             "(https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/"
             "rate-limits-and-user-limits).",
             "",
-            "*Cette analyse est fournie à titre informatif et ne constitue pas un conseil "
-            "financier.*",
+            "*This analysis is provided for informational purposes only and does not constitute "
+            "financial advice.*",
         ]
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
