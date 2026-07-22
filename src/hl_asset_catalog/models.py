@@ -93,6 +93,34 @@ class BenchmarkResult(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
+class MarketAnalytics(BaseModel):
+    instrument_id: str
+    symbol: str
+    dex: str
+    country: str | None = None
+    asset_class: AssetClass
+    observations: int
+    return_1d_pct: float | None = None
+    return_7d_pct: float | None = None
+    return_30d_pct: float | None = None
+    annualized_volatility_pct: float | None = None
+    max_drawdown_pct: float | None = None
+    historical_var_95_pct: float | None = None
+    spread_bps: float | None = None
+    bid_depth_10bps_usd: Decimal | None = None
+    ask_depth_10bps_usd: Decimal | None = None
+    buy_slippage_10k_bps: float | None = None
+    sell_slippage_10k_bps: float | None = None
+    volume_24h_usd: Decimal | None = None
+    open_interest_usd: Decimal | None = None
+    funding_rate: Decimal | None = None
+    funding_annualized_pct: float | None = None
+    liquidity_score: float
+    data_quality_score: float
+    retrieved_at: str
+    errors: list[str] = Field(default_factory=list)
+
+
 class RunReport(BaseModel):
     retrieved_at: str
     endpoints: list[str]

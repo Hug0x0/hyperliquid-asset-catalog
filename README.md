@@ -25,6 +25,7 @@ hl-catalog fetch --asset-class equity --tag semiconductors
 hl-catalog validate
 hl-catalog build-baskets
 hl-catalog build-benchmarks
+hl-catalog analyze-markets --lookback-days 90 --max-assets 40
 hl-catalog export --format csv
 ```
 
@@ -62,6 +63,23 @@ pre-IPO instruments without a single listed home market use `Pre-IPO / Global`.
 highest 24-hour volume (then open interest), and generates `sector_benchmark_report.json` plus CSV.
 Five or more unique constituents is `sufficient`, three or four is `concentrated`, and fewer than
 three is `insufficient`. Definitions are editable in `config/benchmark_definitions.yaml`.
+
+`analyze-markets` enriches the most liquid deduplicated non-crypto markets with daily candles and
+L2 books. It computes 1/7/30-day returns, annualized volatility, maximum drawdown, historical 95%
+VaR, spread, depth within 10 bps, estimated slippage for a $10k order, annualized funding, liquidity
+and data-quality scores, plus a return correlation matrix. Defaults are deliberately capped at 40
+markets over 90 days to remain below the public API's weighted rate limit.
+
+Analytics outputs:
+
+- `market_analytics.json` and `.csv`: risk, activity and execution metrics per selected market;
+- `correlation_matrix.json`: pairwise daily-return correlations;
+- `benchmark_quality_report.json` and `.csv`: investability-oriented sector scores;
+- `medium_analysis.md`: a publication-ready French analysis generated from the live results.
+
+Risk measures are descriptive, not forecasts. Volatility uses 252 trading days; historical VaR is
+the empirical fifth percentile and funding annualization assumes the context rate is hourly. Book
+slippage is a static snapshot that does not model market impact or latency.
 
 ## Verification
 
