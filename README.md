@@ -77,6 +77,10 @@ Analytics outputs:
 - `benchmark_quality_report.json` and `.csv`: investability-oriented sector scores;
 - `medium_analysis.md`: a publication-ready English analysis generated from the live results.
 
+The generated Medium article is intentionally tracked in `output/medium_analysis.md` as a
+publication snapshot. Its cover image is stored in `assets/medium-cover.jpg`, with source and
+license details in `assets/medium-cover-ATTRIBUTION.md`.
+
 Risk measures are descriptive, not forecasts. Volatility uses 252 trading days; historical VaR is
 the empirical fifth percentile and funding annualization assumes the context rate is hourly. Book
 slippage is a static snapshot that does not model market impact or latency.
