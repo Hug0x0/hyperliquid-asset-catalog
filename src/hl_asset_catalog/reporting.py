@@ -139,6 +139,11 @@ def generate_medium_article(
     lines = [
         "# Hyperliquid Beyond Crypto: Which TradFi Benchmarks Can We Actually Build?",
         "",
+        "![Financial trading charts on multiple screens](../assets/medium-cover.jpg)",
+        "",
+        "*Cover photo by [Jakub Żerdzicki](https://unsplash.com/@jakubzerdzicki) on "
+        "[Unsplash](https://unsplash.com/photos/vKNRKjSNbTo), used under the Unsplash License.*",
+        "",
         f"*Analysis generated on {generated} from public Hyperliquid market data.*",
         "",
         "Hyperliquid is no longer only a venue for crypto perpetuals. The expansion of HIP-3 "
