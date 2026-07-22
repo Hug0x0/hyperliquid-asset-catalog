@@ -26,12 +26,15 @@ def benchmark_quality(
         average_quality = (
             sum(item.data_quality_score for item in measured) / len(measured) if measured else 0
         )
+        measured_ratio = (
+            len(measured) / benchmark.unique_constituents if benchmark.unique_constituents else 0
+        )
         depth_score = min(100.0, benchmark.unique_constituents / 10 * 100)
         score = round(
             depth_score * 0.35
             + benchmark.coverage_ratio * 100 * 0.20
-            + average_liquidity * 0.25
-            + average_quality * 0.20,
+            + average_liquidity * measured_ratio * 0.25
+            + average_quality * measured_ratio * 0.20,
             2,
         )
         grade = "A" if score >= 80 else "B" if score >= 65 else "C" if score >= 50 else "D"
@@ -45,6 +48,7 @@ def benchmark_quality(
                 "unique_constituents": benchmark.unique_constituents,
                 "coverage_ratio": round(benchmark.coverage_ratio, 4),
                 "measured_constituents": len(measured),
+                "measured_ratio": round(measured_ratio, 4),
                 "average_liquidity_score": round(average_liquidity, 2),
                 "average_data_quality_score": round(average_quality, 2),
                 "total_volume_24h_usd": benchmark.total_volume_24h_usd,
@@ -91,6 +95,7 @@ def generate_medium_article(
     analytics: list[MarketAnalytics],
     *,
     total_non_crypto: int,
+    lookback_days: int,
     output_path: Path,
 ) -> None:
     status_counts = Counter(str(row["status"]) for row in quality_rows)
@@ -101,7 +106,22 @@ def generate_medium_article(
         reverse=True,
     )[:5]
     best = quality_rows[:8]
-    generated = datetime.now(UTC).strftime("%d %B %Y")
+    now = datetime.now(UTC)
+    months = [
+        "janvier",
+        "février",
+        "mars",
+        "avril",
+        "mai",
+        "juin",
+        "juillet",
+        "août",
+        "septembre",
+        "octobre",
+        "novembre",
+        "décembre",
+    ]
+    generated = f"{now.day} {months[now.month - 1]} {now.year}"
     lines = [
         "# Hyperliquid au-delà de la crypto : quels benchmarks TradFi "
         "peut-on vraiment construire ?",
@@ -120,7 +140,8 @@ def generate_medium_article(
         "chaque ticker est celui affichant le meilleur volume 24 h, puis le meilleur "
         "open interest.",
         "",
-        "Pour les 40 marchés les plus liquides, l’étude combine 90 jours de bougies quotidiennes "
+        f"Pour les {len(analytics)} marchés les plus liquides, l’étude combine "
+        f"{lookback_days} jours de bougies quotidiennes "
         "avec un instantané du carnet L2 : rendements, volatilité annualisée, drawdown maximal, "
         "VaR historique à 95 %, spread, profondeur à 10 points de base et slippage "
         "estimé pour $10k.",
@@ -208,6 +229,12 @@ def generate_medium_article(
             "funding est annualisé à titre indicatif à partir du taux horaire courant. "
             "Aucun market cap n’est inventé : une pondération par capitalisation nécessiterait "
             "une source externe fiable.",
+            "",
+            "Sources techniques : [Info endpoint Hyperliquid]"
+            "(https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint) "
+            "et [limites de taux]"
+            "(https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/"
+            "rate-limits-and-user-limits).",
             "",
             "*Cette analyse est fournie à titre informatif et ne constitue pas un conseil "
             "financier.*",

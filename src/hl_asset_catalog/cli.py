@@ -170,6 +170,7 @@ def analyze_market_data(
         quality,
         analytics,
         total_non_crypto=non_crypto_count,
+        lookback_days=lookback_days,
         output_path=output_dir / "medium_analysis.md",
     )
     typer.echo(
