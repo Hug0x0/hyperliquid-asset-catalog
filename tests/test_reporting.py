@@ -41,5 +41,5 @@ def test_quality_score_and_medium_generation(tmp_path: Path) -> None:
     path = tmp_path / "medium.md"
     generate_medium_article(rows, analytics, total_non_crypto=5, lookback_days=90, output_path=path)
     article = path.read_text()
-    assert "# Hyperliquid au-delà de la crypto" in article
-    assert "**5 contrats non-crypto**" in article
+    assert "# Hyperliquid Beyond Crypto" in article
+    assert "**5 non-crypto contracts**" in article

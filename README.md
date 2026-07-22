@@ -75,7 +75,7 @@ Analytics outputs:
 - `market_analytics.json` and `.csv`: risk, activity and execution metrics per selected market;
 - `correlation_matrix.json`: pairwise daily-return correlations;
 - `benchmark_quality_report.json` and `.csv`: investability-oriented sector scores;
-- `medium_analysis.md`: a publication-ready French analysis generated from the live results.
+- `medium_analysis.md`: a publication-ready English analysis generated from the live results.
 
 Risk measures are descriptive, not forecasts. Volatility uses 252 trading days; historical VaR is
 the empirical fifth percentile and funding annualization assumes the context rate is hourly. Book
