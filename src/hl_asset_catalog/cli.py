@@ -8,6 +8,7 @@ from typing import Annotated
 
 import typer
 
+from .analytics import analyze_markets, export_analytics
 from .basket_engine import build_baskets as evaluate_baskets
 from .benchmark_engine import build_sector_benchmarks, export_benchmark_report
 from .classification import Classifier
@@ -15,7 +16,8 @@ from .config import Settings
 from .discovery import discover_catalog
 from .exporters import export_catalog, make_report, validate_catalog
 from .hyperliquid_client import HyperliquidClient
-from .models import Instrument
+from .models import Instrument, MarketAnalytics
+from .reporting import benchmark_quality, export_benchmark_quality, generate_medium_article
 from .utils import atomic_json
 
 app = typer.Typer(no_args_is_help=True, help="Read-only Hyperliquid asset catalog")
@@ -124,6 +126,55 @@ def build_benchmarks(output_dir: Path = Path("output")) -> None:
     typer.echo(
         f"Built {len(results)} benchmarks: {counts['sufficient']} sufficient, "
         f"{counts['concentrated']} concentrated, {counts['insufficient']} insufficient"
+    )
+
+
+@app.command("analyze-markets")
+def analyze_market_data(
+    output_dir: Path = Path("output"),
+    lookback_days: Annotated[int, typer.Option(min=30, max=365)] = 90,
+    max_assets: Annotated[int, typer.Option(min=1, max=45)] = 40,
+    timeout: float = 20,
+    max_retries: int = 4,
+    concurrency: Annotated[int, typer.Option(min=1, max=8)] = 4,
+    force_refresh: bool = False,
+) -> None:
+    """Compute risk, liquidity, correlation and benchmark quality analytics."""
+    assets = _load(output_dir)
+    settings = Settings(
+        output_dir=output_dir,
+        timeout=timeout,
+        max_retries=max_retries,
+        concurrency=concurrency,
+    )
+
+    async def run() -> tuple[list[MarketAnalytics], dict[str, dict[str, float | None]]]:
+        async with HyperliquidClient(settings) as client:
+            return await analyze_markets(
+                client,
+                assets,
+                lookback_days=lookback_days,
+                max_assets=max_assets,
+                force_refresh=force_refresh,
+            )
+
+    analytics, correlations = asyncio.run(run())
+    export_analytics(analytics, correlations, output_dir)
+    benchmarks = build_sector_benchmarks(assets, ROOT / "config/benchmark_definitions.yaml")
+    quality = benchmark_quality(benchmarks, analytics)
+    export_benchmark_quality(quality, output_dir)
+    non_crypto_count = sum(
+        asset.asset_class not in {"crypto", "spot_crypto", "unknown"} for asset in assets
+    )
+    generate_medium_article(
+        quality,
+        analytics,
+        total_non_crypto=non_crypto_count,
+        output_path=output_dir / "medium_analysis.md",
+    )
+    typer.echo(
+        f"Analyzed {len(analytics)} markets over {lookback_days} days; "
+        f"wrote analytics and Medium report to {output_dir}"
     )
 
 
