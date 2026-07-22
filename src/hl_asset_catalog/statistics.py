@@ -2,9 +2,17 @@ from __future__ import annotations
 
 import math
 from decimal import Decimal
-from typing import Any
+from typing import Any, TypedDict
 
 from .utils import decimal_or_none
+
+
+class OrderBookMetrics(TypedDict):
+    spread_bps: float | None
+    bid_depth_10bps_usd: Decimal | None
+    ask_depth_10bps_usd: Decimal | None
+    buy_slippage_10k_bps: float | None
+    sell_slippage_10k_bps: float | None
 
 
 def close_prices(candles: list[dict[str, Any]]) -> list[float]:
@@ -68,7 +76,7 @@ def correlation(left: list[float], right: list[float]) -> float | None:
 
 def order_book_metrics(
     book: dict[str, Any], *, target_notional: Decimal = Decimal("10000")
-) -> dict[str, Decimal | float | None]:
+) -> OrderBookMetrics:
     levels = book.get("levels", [])
     bids = levels[0] if len(levels) > 0 else []
     asks = levels[1] if len(levels) > 1 else []
