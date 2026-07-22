@@ -86,10 +86,13 @@ def order_book_metrics(
 
     def depth(side: list[dict[str, Any]]) -> Decimal:
         return sum(
-            (decimal_or_none(level.get("px")) or Decimal(0))
-            * (decimal_or_none(level.get("sz")) or Decimal(0))
-            for level in side
-            if abs((decimal_or_none(level.get("px")) or mid) / mid - 1) <= Decimal("0.001")
+            (
+                (decimal_or_none(level.get("px")) or Decimal(0))
+                * (decimal_or_none(level.get("sz")) or Decimal(0))
+                for level in side
+                if abs((decimal_or_none(level.get("px")) or mid) / mid - 1) <= Decimal("0.001")
+            ),
+            start=Decimal(0),
         )
 
     def slippage(side: list[dict[str, Any]]) -> float | None:
