@@ -123,6 +123,8 @@ class MarketAnalytics(BaseModel):
     funding_annualized_pct: float | None = None
     liquidity_score: float
     data_quality_score: float
+    mark_oracle_divergence_bps: float | None = None
+    anomalies: list[str] = Field(default_factory=list)
     retrieved_at: str
     errors: list[str] = Field(default_factory=list)
 
