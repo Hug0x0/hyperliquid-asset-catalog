@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .models import SCHEMA_VERSION
 from .utils import atomic_json
 
 
@@ -51,7 +52,7 @@ def write_analysis_manifest(
         "medium_analysis.md",
     ]
     manifest: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": SCHEMA_VERSION,
         "retrieval_started_at": started_at,
         "retrieval_completed_at": datetime.now(UTC).isoformat(),
         "git_commit": git_revision(root),

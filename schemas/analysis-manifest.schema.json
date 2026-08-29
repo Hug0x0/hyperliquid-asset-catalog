@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Hug0x0/hyperliquid-asset-catalog/schemas/analysis-manifest.schema.json",
+  "title": "Hyperliquid analysis manifest",
+  "type": "object",
+  "required": ["schema_version", "retrieval_started_at", "retrieval_completed_at", "api_endpoint", "arguments", "source_files", "generated_files", "cache"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "retrieval_started_at": {"type": "string"},
+    "retrieval_completed_at": {"type": "string"},
+    "git_commit": {"type": ["string", "null"]},
+    "api_endpoint": {"type": "string"},
+    "arguments": {"type": "object"},
+    "source_files": {"type": "object"},
+    "generated_files": {"type": "object"},
+    "cache": {"type": "object"}
+  }
+}

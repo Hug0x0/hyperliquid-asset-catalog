@@ -6,7 +6,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from .models import Instrument, RunReport
+from .models import SCHEMA_VERSION, Instrument, RunReport
 from .utils import atomic_json, json_default
 
 
@@ -146,6 +146,7 @@ def export_unknown_classification_report(
         status = "likely_alias" if clean in classified_symbols else "unknown" if old else "new"
         rows.append(
             {
+                "schema_version": SCHEMA_VERSION,
                 "id": asset.id,
                 "symbol": asset.canonical_symbol,
                 "dex": asset.dex,

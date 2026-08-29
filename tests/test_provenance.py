@@ -23,7 +23,7 @@ def test_write_analysis_manifest(tmp_path: Path) -> None:
         stale_cache_fallbacks=["l2Book"],
     )
 
-    assert manifest["schema_version"] == 1
+    assert manifest["schema_version"] == "1.0"
     assert manifest["git_commit"] is None
     assert manifest["cache"] == {"fresh_hits": 2, "stale_fallbacks": ["l2Book"]}
     assert (tmp_path / "analysis_manifest.json").is_file()

@@ -11,7 +11,7 @@ from typing import Any
 
 from .benchmark_engine import deduplicate_markets
 from .hyperliquid_client import HyperliquidClient
-from .models import Instrument, MarketAnalytics
+from .models import SCHEMA_VERSION, Instrument, MarketAnalytics
 from .statistics import (
     OrderBookMetrics,
     annualized_volatility,
@@ -167,8 +167,14 @@ def export_analytics(
 ) -> None:
     rows = [result.model_dump(mode="python") for result in results]
     atomic_json(output_dir / "market_analytics.json", rows)
-    atomic_json(output_dir / "correlation_matrix.json", correlations)
-    atomic_json(output_dir / "correlation_observations.json", correlation_observations)
+    atomic_json(
+        output_dir / "correlation_matrix.json",
+        {"schema_version": SCHEMA_VERSION, "data": correlations},
+    )
+    atomic_json(
+        output_dir / "correlation_observations.json",
+        {"schema_version": SCHEMA_VERSION, "data": correlation_observations},
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     with (output_dir / "market_analytics.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]) if rows else [])
