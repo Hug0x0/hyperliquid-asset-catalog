@@ -25,6 +25,8 @@ class HyperliquidClient:
     def __init__(self, settings: Settings, *, transport: httpx.AsyncBaseTransport | None = None):
         self.settings = settings
         self.request_count = 0
+        self.cache_hits = 0
+        self.stale_cache_fallbacks: list[str] = []
         self.errors: list[str] = []
         self.endpoints: set[str] = set()
         self._semaphore = asyncio.Semaphore(settings.concurrency)
@@ -47,6 +49,7 @@ class HyperliquidClient:
             and path.exists()
             and time.time() - path.stat().st_mtime < self.settings.api_cache_ttl
         ):
+            self.cache_hits += 1
             return json.loads(path.read_text(encoding="utf-8"))
         try:
             async for attempt in AsyncRetrying(
@@ -71,6 +74,7 @@ class HyperliquidClient:
         except Exception as exc:
             self.errors.append(f"{payload.get('type')}: {exc}")
             if path.exists():
+                self.stale_cache_fallbacks.append(str(payload.get("type", "unknown")))
                 return json.loads(path.read_text(encoding="utf-8"))
             raise
 

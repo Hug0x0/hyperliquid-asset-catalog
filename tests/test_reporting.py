@@ -62,7 +62,9 @@ def test_quality_score_and_medium_generation(tmp_path: Path) -> None:
         total_non_crypto=5,
         lookback_days=90,
         output_path=path,
+        git_commit="0123456789abcdef",
     )
     article = path.read_text()
     assert "# Hyperliquid Beyond Crypto" in article
     assert "**5 non-crypto contracts**" in article
+    assert "commit `0123456789ab`" in article

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -17,6 +18,7 @@ from .discovery import discover_catalog
 from .exporters import export_catalog, make_report, validate_catalog
 from .hyperliquid_client import HyperliquidClient
 from .models import Instrument, MarketAnalytics
+from .provenance import git_revision, write_analysis_manifest
 from .reporting import benchmark_quality, export_benchmark_quality, generate_medium_article
 from .utils import atomic_json
 
@@ -141,6 +143,8 @@ def analyze_market_data(
 ) -> None:
     """Compute risk, liquidity, correlation and benchmark quality analytics."""
     assets = _load(output_dir)
+    started_at = datetime.now(UTC).isoformat()
+    revision = git_revision(ROOT)
     settings = Settings(
         output_dir=output_dir,
         timeout=timeout,
@@ -152,17 +156,22 @@ def analyze_market_data(
         list[MarketAnalytics],
         dict[str, dict[str, float | None]],
         dict[str, dict[str, int]],
+        int,
+        list[str],
     ]:
         async with HyperliquidClient(settings) as client:
-            return await analyze_markets(
+            results = await analyze_markets(
                 client,
                 assets,
                 lookback_days=lookback_days,
                 max_assets=max_assets,
                 force_refresh=force_refresh,
             )
+            return (*results, client.cache_hits, client.stale_cache_fallbacks)
 
-    analytics, correlations, correlation_observations = asyncio.run(run())
+    analytics, correlations, correlation_observations, cache_hits, stale_fallbacks = asyncio.run(
+        run()
+    )
     export_analytics(analytics, correlations, correlation_observations, output_dir)
     benchmarks = build_sector_benchmarks(assets, ROOT / "config/benchmark_definitions.yaml")
     quality = benchmark_quality(benchmarks, analytics)
@@ -178,6 +187,23 @@ def analyze_market_data(
         total_non_crypto=non_crypto_count,
         lookback_days=lookback_days,
         output_path=output_dir / "medium_analysis.md",
+        git_commit=revision,
+    )
+    write_analysis_manifest(
+        output_dir,
+        root=ROOT,
+        started_at=started_at,
+        api_endpoint=settings.api_url,
+        arguments={
+            "lookback_days": lookback_days,
+            "max_assets": max_assets,
+            "timeout": timeout,
+            "max_retries": max_retries,
+            "concurrency": concurrency,
+            "force_refresh": force_refresh,
+        },
+        cache_hits=cache_hits,
+        stale_cache_fallbacks=stale_fallbacks,
     )
     typer.echo(
         f"Analyzed {len(analytics)} markets over {lookback_days} days; "
