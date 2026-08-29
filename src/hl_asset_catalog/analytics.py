@@ -73,7 +73,8 @@ async def analyze_markets(
     end_time = int(time.time() * 1000)
     start_time = end_time - lookback_days * 86_400_000
 
-    async def analyze(asset: Instrument) -> tuple[MarketAnalytics, dict[int, float]]:
+    async def analyze(index: int, asset: Instrument) -> tuple[MarketAnalytics, dict[int, float]]:
+        await client.analytics_jitter(index)
         errors: list[str] = []
         candles: list[dict[str, Any]] = []
         book: dict[str, Any] = {}
@@ -144,7 +145,7 @@ async def analyze_markets(
         )
         return result, dated_returns(candles)
 
-    pairs = await asyncio.gather(*(analyze(asset) for asset in markets))
+    pairs = await asyncio.gather(*(analyze(index, asset) for index, asset in enumerate(markets)))
     results = [pair[0] for pair in pairs]
     return_map = {pair[0].symbol: pair[1] for pair in pairs}
     correlations: dict[str, dict[str, float | None]] = {}

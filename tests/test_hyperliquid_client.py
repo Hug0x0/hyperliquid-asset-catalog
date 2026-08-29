@@ -122,3 +122,28 @@ async def test_concurrent_identical_requests_share_one_cache_write(tmp_path) -> 
         left, right = await asyncio.gather(client.perp_dexs(), client.perp_dexs())
     assert left == right
     assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_honors_retry_after(tmp_path) -> None:
+    calls = 0
+    waits: list[float] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(429, headers={"retry-after": "0.01"})
+        return httpx.Response(200, json=[None, "xyz"], headers={"content-type": "application/json"})
+
+    async def sleep(delay: float) -> None:
+        waits.append(delay)
+
+    settings = Settings(cache_dir=tmp_path, max_retries=2)
+    async with HyperliquidClient(
+        settings, transport=httpx.MockTransport(handler), sleep=sleep
+    ) as client:
+        assert await client.perp_dexs() == ["", "xyz"]
+        assert client.rate_limit_responses == 1
+        assert client.request_weight == 2
+    assert 0.01 in waits

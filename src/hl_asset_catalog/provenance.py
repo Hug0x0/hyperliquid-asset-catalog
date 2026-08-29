@@ -44,6 +44,7 @@ def write_analysis_manifest(
     cache_hits: int,
     cache_corruptions: list[str],
     stale_cache_fallbacks: list[str],
+    network_metrics: dict[str, int | float],
 ) -> dict[str, Any]:
     generated_files = [
         "market_analytics.json",
@@ -68,6 +69,7 @@ def write_analysis_manifest(
             "corruptions": cache_corruptions,
             "stale_fallbacks": stale_cache_fallbacks,
         },
+        "network": network_metrics,
     }
     atomic_json(output_dir / "analysis_manifest.json", manifest)
     return manifest

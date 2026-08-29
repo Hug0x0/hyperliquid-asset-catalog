@@ -22,6 +22,7 @@ def test_write_analysis_manifest(tmp_path: Path) -> None:
         cache_hits=2,
         cache_corruptions=["bad.json: JSONDecodeError"],
         stale_cache_fallbacks=["l2Book"],
+        network_metrics={"request_weight": 22, "rate_limit_responses": 1, "retry_wait_seconds": 2},
     )
 
     assert manifest["schema_version"] == "1.0"
@@ -32,3 +33,4 @@ def test_write_analysis_manifest(tmp_path: Path) -> None:
         "stale_fallbacks": ["l2Book"],
     }
     assert (tmp_path / "analysis_manifest.json").is_file()
+    assert manifest["network"]["request_weight"] == 22
