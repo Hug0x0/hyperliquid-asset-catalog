@@ -98,3 +98,7 @@ Official references: [Info endpoint](https://hyperliquid.gitbook.io/hyperliquid-
 [perpetuals](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint/perpetuals),
 [spot](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint/spot), and
 [asset IDs](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/asset-ids).
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
