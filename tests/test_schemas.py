@@ -3,6 +3,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
+from hl_asset_catalog.analytics import export_analytics
 from hl_asset_catalog.models import Instrument, MarketAnalytics
 
 SCHEMAS = Path(__file__).parents[1] / "schemas"
@@ -42,3 +43,10 @@ def test_schema_version_rejects_incompatible_fixture() -> None:
     validator = Draft202012Validator(schema("catalog.schema.json"))
     errors = list(validator.iter_errors([{"schema_version": "2.0"}]))
     assert errors
+
+
+def test_exported_matrix_envelope_matches_schema(tmp_path: Path) -> None:
+    export_analytics([], {"A": {"A": 1.0}}, {"A": {"A": 30}}, tmp_path)
+    validator = Draft202012Validator(schema("matrix.schema.json"))
+    validator.validate(json.loads((tmp_path / "correlation_matrix.json").read_text()))
+    validator.validate(json.loads((tmp_path / "correlation_observations.json").read_text()))

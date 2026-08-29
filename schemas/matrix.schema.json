@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Hug0x0/hyperliquid-asset-catalog/schemas/matrix.schema.json",
+  "title": "Versioned correlation or observation matrix",
+  "type": "object",
+  "required": ["schema_version", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "data": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {"type": ["number", "integer", "null"]}
+      }
+    }
+  },
+  "additionalProperties": false
+}
