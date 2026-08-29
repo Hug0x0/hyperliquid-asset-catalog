@@ -74,7 +74,9 @@ Analytics outputs:
 
 - `market_analytics.json` and `.csv`: risk, activity and execution metrics per selected market;
 - `correlation_matrix.json`: pairwise daily-return correlations;
+- `correlation_observations.json`: common dated observations used for each correlation pair;
 - `benchmark_quality_report.json` and `.csv`: investability-oriented sector scores;
+- `analysis_manifest.json`: commit, arguments, timestamps, hashes and cache provenance;
 - `medium_analysis.md`: a publication-ready English analysis generated from the live results.
 
 The generated Medium article is intentionally tracked in `output/medium_analysis.md` as a
@@ -92,7 +94,14 @@ ruff check .
 ruff format --check .
 mypy src
 pytest
+pip-audit
+python -m build
+twine check dist/*
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before proposing code or classification changes,
+[SECURITY.md](SECURITY.md) for private vulnerability reporting, and [RELEASING.md](RELEASING.md)
+for the tagged release process.
 
 Official references: [Info endpoint](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint),
 [perpetuals](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint/perpetuals),
