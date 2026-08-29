@@ -123,20 +123,24 @@ def export_catalog(
 
 
 def validate_catalog(assets: list[Instrument]) -> list[str]:
+    report = validate_catalog_report(assets)
+    return report["errors"] + report["warnings"]
+
+
+def validate_catalog_report(assets: list[Instrument]) -> dict[str, list[str]]:
+    errors: list[str] = []
     warnings: list[str] = []
     for field in ("id", "exchange_symbol"):
         counts = Counter(getattr(a, field) for a in assets)
-        warnings.extend(
-            f"Duplicate {field}: {value}" for value, count in counts.items() if count > 1
-        )
+        errors.extend(f"Duplicate {field}: {value}" for value, count in counts.items() if count > 1)
     for asset in assets:
         if asset.mark_price is not None and asset.mark_price <= 0:
-            warnings.append(f"Non-positive price: {asset.id}")
+            errors.append(f"Non-positive price: {asset.id}")
         if asset.max_leverage is not None and asset.max_leverage <= 0:
-            warnings.append(f"Invalid leverage: {asset.id}")
+            errors.append(f"Invalid leverage: {asset.id}")
         if asset.asset_class == "unknown":
             warnings.append(f"Unknown classification: {asset.id}")
-    return warnings
+    return {"errors": errors, "warnings": warnings}
 
 
 def make_report(
