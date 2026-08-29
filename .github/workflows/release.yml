@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 jobs:
   build:
@@ -19,9 +21,21 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: pip install build twine
+      - run: pip install -e . build twine cyclonedx-bom==7.3.1
       - run: python -m build
       - run: twine check dist/*
+      - name: Generate SBOM and checksums
+        run: |
+          cyclonedx-py environment --output-format JSON --output-file dist/sbom.cdx.json
+          cd dist
+          sha256sum *.whl *.tar.gz sbom.cdx.json > SHA256SUMS
+      - name: Attest release artifacts
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/sbom.cdx.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: python-package-${{ github.ref_name }}

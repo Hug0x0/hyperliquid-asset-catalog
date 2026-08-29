@@ -35,8 +35,18 @@ git push origin vX.Y.Z
 ```
 
 The `Package release` workflow rebuilds the wheel and source distribution, verifies them with
-Twine, and uploads them as workflow artifacts. Download and inspect those artifacts, then create a
-GitHub release from the tag using the matching changelog section as release notes.
+Twine, generates a CycloneDX SBOM and SHA-256 checksums, creates GitHub build-provenance
+attestations, and uploads the bundle as workflow artifacts. Download and inspect those artifacts,
+then create a GitHub release from the tag using the matching changelog section as release notes.
+
+Verify the downloaded bundle locally:
+
+```bash
+cd dist
+sha256sum --check SHA256SUMS
+gh attestation verify hyperliquid_asset_catalog-X.Y.Z-py3-none-any.whl \
+  --repo Hug0x0/hyperliquid-asset-catalog
+```
 
 If PyPI publishing is added later, use trusted publishing with a protected GitHub environment; do
 not store long-lived API tokens in repository secrets.
