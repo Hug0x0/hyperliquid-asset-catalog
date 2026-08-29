@@ -85,6 +85,7 @@ def export_catalog(
     }
     atomic_json(output_dir / "non_crypto_by_country.json", country_catalog, pretty=pretty)
     atomic_json(output_dir / "catalog_diff.json", diff, pretty=pretty)
+    export_unknown_classification_report(assets, output_dir, pretty=pretty)
     rows = serialized(assets, include_raw=False)
     with (output_dir / "all_assets.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]) if rows else [])
@@ -120,6 +121,50 @@ def export_catalog(
                     }
                 )
     return diff
+
+
+def export_unknown_classification_report(
+    assets: list[Instrument], output_dir: Path, *, pretty: bool = True
+) -> list[dict[str, Any]]:
+    path = output_dir / "unknown_classification_report.json"
+    previous: dict[str, dict[str, Any]] = {}
+    if path.exists():
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(loaded, list):
+            previous = {str(row.get("id")): row for row in loaded if isinstance(row, dict)}
+    classified_symbols = {
+        asset.canonical_symbol.upper() for asset in assets if asset.asset_class != "unknown"
+    }
+    rows: list[dict[str, Any]] = []
+    for asset in sorted(
+        (item for item in assets if item.asset_class == "unknown"),
+        key=lambda item: (item.dex, item.canonical_symbol),
+    ):
+        symbol = asset.canonical_symbol.upper()
+        clean = symbol.removeprefix("1000").removeprefix("K")
+        old = previous.get(asset.id)
+        status = "likely_alias" if clean in classified_symbols else "unknown" if old else "new"
+        rows.append(
+            {
+                "id": asset.id,
+                "symbol": asset.canonical_symbol,
+                "dex": asset.dex,
+                "triage_status": status,
+                "likely_alias_of": clean if status == "likely_alias" else None,
+                "volume_24h_usd": asset.volume_24h_usd,
+                "open_interest_usd": asset.open_interest_usd,
+                "first_seen_at": old.get("first_seen_at") if old else asset.retrieved_at,
+                "retrieved_at": asset.retrieved_at,
+            }
+        )
+    atomic_json(path, rows, pretty=pretty)
+    csv_path = output_dir / "unknown_classification_report.csv"
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]) if rows else [])
+        if rows:
+            writer.writeheader()
+            writer.writerows(rows)
+    return rows
 
 
 def validate_catalog(assets: list[Instrument]) -> list[str]:
