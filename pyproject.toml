@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27,<1.32"]
 build-backend = "hatchling.build"
 
 [project]
@@ -8,6 +8,18 @@ version = "0.1.0"
 description = "Read-only catalog of Hyperliquid native, HIP-3, XYZ and spot markets"
 readme = "README.md"
 license = "Apache-2.0"
+authors = [{ name = "Hugo Anthony Boutot" }]
+keywords = ["hyperliquid", "hip-3", "market-data", "defi", "analytics"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Financial and Insurance Industry",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Typing :: Typed",
+]
 requires-python = ">=3.12"
 dependencies = [
   "beautifulsoup4>=4.12,<5", "httpx>=0.27,<1", "pydantic>=2.8,<3",
@@ -19,7 +31,7 @@ Repository = "https://github.com/Hug0x0/hyperliquid-asset-catalog"
 Issues = "https://github.com/Hug0x0/hyperliquid-asset-catalog/issues"
 
 [project.optional-dependencies]
-dev = ["mypy>=1.11", "pip-audit>=2.9,<3", "pytest>=8.3", "pytest-asyncio>=0.24", "respx>=0.21", "ruff>=0.6", "types-PyYAML>=6"]
+dev = ["build>=1.3,<2", "mypy>=1.11", "pip-audit>=2.9,<3", "pytest>=8.3", "pytest-asyncio>=0.24", "respx>=0.21", "ruff>=0.6", "twine>=6.2,<7", "types-PyYAML>=6"]
 
 [project.scripts]
 hl-catalog = "hl_asset_catalog.cli:app"
