@@ -231,6 +231,7 @@ def analyze_market_data(
         dict[str, dict[str, int]],
         int,
         list[str],
+        list[str],
     ]:
         async with HyperliquidClient(settings) as client:
             results = await analyze_markets(
@@ -240,11 +241,21 @@ def analyze_market_data(
                 max_assets=max_assets,
                 force_refresh=force_refresh,
             )
-            return (*results, client.cache_hits, client.stale_cache_fallbacks)
+            return (
+                *results,
+                client.cache_hits,
+                client.cache_corruptions,
+                client.stale_cache_fallbacks,
+            )
 
-    analytics, correlations, correlation_observations, cache_hits, stale_fallbacks = asyncio.run(
-        run()
-    )
+    (
+        analytics,
+        correlations,
+        correlation_observations,
+        cache_hits,
+        cache_corruptions,
+        stale_fallbacks,
+    ) = asyncio.run(run())
     export_analytics(analytics, correlations, correlation_observations, output_dir)
     benchmarks = build_sector_benchmarks(assets, ROOT / "config/benchmark_definitions.yaml")
     quality = benchmark_quality(benchmarks, analytics)
@@ -276,6 +287,7 @@ def analyze_market_data(
             "force_refresh": force_refresh,
         },
         cache_hits=cache_hits,
+        cache_corruptions=cache_corruptions,
         stale_cache_fallbacks=stale_fallbacks,
     )
     typer.echo(

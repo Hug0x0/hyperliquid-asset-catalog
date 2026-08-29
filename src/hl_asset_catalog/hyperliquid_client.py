@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -20,7 +21,7 @@ from .api_validation import (
     validate_perp_dexs,
 )
 from .config import Settings
-from .utils import cache_key
+from .utils import atomic_json, cache_key
 
 
 class HyperliquidAPIError(RuntimeError):
@@ -32,10 +33,12 @@ class HyperliquidClient:
         self.settings = settings
         self.request_count = 0
         self.cache_hits = 0
+        self.cache_corruptions: list[str] = []
         self.stale_cache_fallbacks: list[str] = []
         self.errors: list[str] = []
         self.endpoints: set[str] = set()
         self._semaphore = asyncio.Semaphore(settings.concurrency)
+        self._cache_locks: dict[str, asyncio.Lock] = {}
         self._client = httpx.AsyncClient(
             timeout=settings.timeout,
             headers={"User-Agent": settings.user_agent, "Content-Type": "application/json"},
@@ -50,13 +53,32 @@ class HyperliquidClient:
 
     async def post(self, payload: dict[str, Any], *, force_refresh: bool = False) -> Any:
         path = self.settings.cache_dir / "api" / f"{cache_key(payload)}.json"
-        if (
-            not force_refresh
-            and path.exists()
-            and time.time() - path.stat().st_mtime < self.settings.api_cache_ttl
-        ):
-            self.cache_hits += 1
+        lock = self._cache_locks.setdefault(path.name, asyncio.Lock())
+        async with lock:
+            cached = self._read_cache(path)
+            if (
+                not force_refresh
+                and cached is not None
+                and time.time() - path.stat().st_mtime < self.settings.api_cache_ttl
+            ):
+                self.cache_hits += 1
+                return cached
+            return await self._request_and_cache(payload, path, cached)
+
+    def _read_cache(self, path: Path) -> Any | None:
+        if not path.exists():
+            return None
+        try:
             return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            quarantined = path.with_suffix(f".corrupt-{int(time.time())}.json")
+            path.replace(quarantined)
+            self.cache_corruptions.append(f"{path.name}: {type(exc).__name__}")
+            return None
+
+    async def _request_and_cache(
+        self, payload: dict[str, Any], path: Path, stale: Any | None
+    ) -> Any:
         try:
             async for attempt in AsyncRetrying(
                 stop=stop_after_attempt(self.settings.max_retries),
@@ -74,14 +96,13 @@ class HyperliquidClient:
                     if "json" not in content_type:
                         raise HyperliquidAPIError(f"Unexpected Content-Type: {content_type}")
                     data = response.json()
-                    path.parent.mkdir(parents=True, exist_ok=True)
-                    path.write_text(json.dumps(data), encoding="utf-8")
+                    atomic_json(path, data, pretty=False)
                     return data
         except Exception as exc:
             self.errors.append(f"{payload.get('type')}: {exc}")
-            if path.exists():
+            if stale is not None:
                 self.stale_cache_fallbacks.append(str(payload.get("type", "unknown")))
-                return json.loads(path.read_text(encoding="utf-8"))
+                return stale
             raise
 
     async def perp_dexs(self, *, force_refresh: bool = False) -> list[str]:

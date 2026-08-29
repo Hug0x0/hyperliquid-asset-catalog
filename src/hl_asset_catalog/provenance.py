@@ -42,6 +42,7 @@ def write_analysis_manifest(
     api_endpoint: str,
     arguments: dict[str, Any],
     cache_hits: int,
+    cache_corruptions: list[str],
     stale_cache_fallbacks: list[str],
 ) -> dict[str, Any]:
     generated_files = [
@@ -64,6 +65,7 @@ def write_analysis_manifest(
         },
         "cache": {
             "fresh_hits": cache_hits,
+            "corruptions": cache_corruptions,
             "stale_fallbacks": stale_cache_fallbacks,
         },
     }
