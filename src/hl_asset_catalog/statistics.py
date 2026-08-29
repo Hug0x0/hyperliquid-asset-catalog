@@ -137,8 +137,15 @@ def order_book_metrics(
     book: dict[str, Any], *, target_notional: Decimal = Decimal("10000")
 ) -> OrderBookMetrics:
     levels = book.get("levels", [])
-    bids = levels[0] if len(levels) > 0 else []
-    asks = levels[1] if len(levels) > 1 else []
+    bids = sorted(
+        levels[0] if len(levels) > 0 else [],
+        key=lambda level: decimal_or_none(level.get("px")) or Decimal(0),
+        reverse=True,
+    )
+    asks = sorted(
+        levels[1] if len(levels) > 1 else [],
+        key=lambda level: decimal_or_none(level.get("px")) or Decimal("Infinity"),
+    )
     best_bid = decimal_or_none(bids[0].get("px")) if bids else None
     best_ask = decimal_or_none(asks[0].get("px")) if asks else None
     if best_bid is None or best_ask is None or best_bid <= 0 or best_ask <= 0:
