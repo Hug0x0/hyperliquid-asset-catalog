@@ -13,6 +13,12 @@ from tenacity import (
     wait_random_exponential,
 )
 
+from .api_validation import (
+    validate_candles,
+    validate_l2_book,
+    validate_meta_contexts,
+    validate_perp_dexs,
+)
 from .config import Settings
 from .utils import cache_key
 
@@ -80,8 +86,7 @@ class HyperliquidClient:
 
     async def perp_dexs(self, *, force_refresh: bool = False) -> list[str]:
         data = await self.post({"type": "perpDexs"}, force_refresh=force_refresh)
-        if not isinstance(data, list):
-            raise HyperliquidAPIError("perpDexs returned a non-list")
+        data = validate_perp_dexs(data)
         names: list[str] = [""]
         for item in data:
             name = item.get("name") if isinstance(item, dict) else item
@@ -93,15 +98,11 @@ class HyperliquidClient:
         data = await self.post(
             {"type": "metaAndAssetCtxs", "dex": dex}, force_refresh=force_refresh
         )
-        if not isinstance(data, list):
-            raise HyperliquidAPIError("metaAndAssetCtxs returned a non-list")
-        return data
+        return validate_meta_contexts(data, "metaAndAssetCtxs")
 
     async def spot_meta_contexts(self, *, force_refresh: bool = False) -> list[Any]:
         data = await self.post({"type": "spotMetaAndAssetCtxs"}, force_refresh=force_refresh)
-        if not isinstance(data, list):
-            raise HyperliquidAPIError("spotMetaAndAssetCtxs returned a non-list")
-        return data
+        return validate_meta_contexts(data, "spotMetaAndAssetCtxs")
 
     async def candle_snapshot(
         self,
@@ -124,12 +125,8 @@ class HyperliquidClient:
             },
             force_refresh=force_refresh,
         )
-        if not isinstance(data, list):
-            raise HyperliquidAPIError("candleSnapshot returned a non-list")
-        return [item for item in data if isinstance(item, dict)]
+        return validate_candles(data)
 
     async def l2_book(self, coin: str, *, force_refresh: bool = False) -> dict[str, Any]:
         data = await self.post({"type": "l2Book", "coin": coin}, force_refresh=force_refresh)
-        if not isinstance(data, dict):
-            raise HyperliquidAPIError("l2Book returned a non-object")
-        return data
+        return validate_l2_book(data)
