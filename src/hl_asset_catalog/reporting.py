@@ -7,7 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from .models import BenchmarkResult, Instrument, MarketAnalytics
+from .models import SCHEMA_VERSION, BenchmarkResult, Instrument, MarketAnalytics
 from .utils import atomic_json
 
 
@@ -40,6 +40,7 @@ def benchmark_quality(
         grade = "A" if score >= 80 else "B" if score >= 65 else "C" if score >= 50 else "D"
         rows.append(
             {
+                "schema_version": SCHEMA_VERSION,
                 "benchmark_id": benchmark.benchmark_id,
                 "name": benchmark.name,
                 "status": benchmark.status,

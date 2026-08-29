@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Hug0x0/hyperliquid-asset-catalog/schemas/catalog.schema.json",
+  "title": "Hyperliquid asset catalog",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["schema_version", "id", "canonical_symbol", "exchange_symbol", "dex", "market_type", "asset_class"],
+    "properties": {
+      "schema_version": {"const": "1.0"},
+      "id": {"type": "string", "minLength": 1},
+      "canonical_symbol": {"type": "string", "minLength": 1},
+      "exchange_symbol": {"type": "string", "minLength": 1},
+      "dex": {"type": "string"},
+      "market_type": {"enum": ["perp", "spot"]},
+      "asset_class": {"enum": ["crypto", "equity", "equity_index", "commodity", "forex", "interest_rate", "volatility_index", "pre_ipo", "spot_crypto", "unknown"]}
+    }
+  }
+}

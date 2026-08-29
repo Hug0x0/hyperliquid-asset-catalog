@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Any
 
@@ -84,3 +85,65 @@ async def test_market_data_accepts_forward_compatible_fields(tmp_path) -> None:
     async with HyperliquidClient(settings, transport=httpx.MockTransport(handler)) as client:
         book = await client.l2_book("BTC")
     assert book["futureField"] == {"version": 2}
+
+
+@pytest.mark.asyncio
+async def test_cache_quarantines_corrupt_json(tmp_path) -> None:
+    calls = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, json=[None, "xyz"], headers={"content-type": "application/json"})
+
+    settings = Settings(cache_dir=tmp_path, max_retries=1)
+    async with HyperliquidClient(settings, transport=httpx.MockTransport(handler)) as client:
+        await client.perp_dexs()
+        cache_path = next((tmp_path / "api").glob("*.json"))
+        cache_path.write_text("{broken")
+        await client.perp_dexs()
+        assert client.cache_corruptions
+    assert calls == 2
+    assert list((tmp_path / "api").glob("*.corrupt-*.json"))
+
+
+@pytest.mark.asyncio
+async def test_concurrent_identical_requests_share_one_cache_write(tmp_path) -> None:
+    calls = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        await asyncio.sleep(0)
+        return httpx.Response(200, json=[None, "xyz"], headers={"content-type": "application/json"})
+
+    settings = Settings(cache_dir=tmp_path, max_retries=1)
+    async with HyperliquidClient(settings, transport=httpx.MockTransport(handler)) as client:
+        left, right = await asyncio.gather(client.perp_dexs(), client.perp_dexs())
+    assert left == right
+    assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_honors_retry_after(tmp_path) -> None:
+    calls = 0
+    waits: list[float] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(429, headers={"retry-after": "0.01"})
+        return httpx.Response(200, json=[None, "xyz"], headers={"content-type": "application/json"})
+
+    async def sleep(delay: float) -> None:
+        waits.append(delay)
+
+    settings = Settings(cache_dir=tmp_path, max_retries=2)
+    async with HyperliquidClient(
+        settings, transport=httpx.MockTransport(handler), sleep=sleep
+    ) as client:
+        assert await client.perp_dexs() == ["", "xyz"]
+        assert client.rate_limit_responses == 1
+        assert client.request_weight == 2
+    assert 0.01 in waits

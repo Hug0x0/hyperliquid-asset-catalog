@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     timeout: float = 20.0
     max_retries: int = 4
     concurrency: int = 4
+    weighted_request_budget: int = 1_000
+    analytics_jitter_max: float = 0.05
+    oracle_divergence_bps: float = 100.0
+    abnormal_spread_bps: float = 50.0
+    stale_candle_hours: float = 48.0
     api_cache_ttl: int = 60
     doc_cache_ttl: int = 86_400
     user_agent: str = "hl-asset-catalog/0.1"

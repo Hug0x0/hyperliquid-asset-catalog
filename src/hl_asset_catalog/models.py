@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+SCHEMA_VERSION: Literal["1.0"] = "1.0"
+
 AssetClass = Literal[
     "crypto",
     "equity",
@@ -22,6 +24,7 @@ AssetClass = Literal[
 
 class Instrument(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    schema_version: Literal["1.0"] = SCHEMA_VERSION
     id: str
     canonical_symbol: str
     exchange_symbol: str
@@ -64,6 +67,7 @@ class Instrument(BaseModel):
 
 
 class BasketResult(BaseModel):
+    schema_version: Literal["1.0"] = SCHEMA_VERSION
     basket_id: str
     name: str
     status: Literal["available", "partial", "unavailable"]
@@ -78,6 +82,7 @@ class BasketResult(BaseModel):
 
 
 class BenchmarkResult(BaseModel):
+    schema_version: Literal["1.0"] = SCHEMA_VERSION
     benchmark_id: str
     name: str
     status: Literal["sufficient", "concentrated", "insufficient"]
@@ -94,6 +99,7 @@ class BenchmarkResult(BaseModel):
 
 
 class MarketAnalytics(BaseModel):
+    schema_version: Literal["1.0"] = SCHEMA_VERSION
     instrument_id: str
     symbol: str
     dex: str
@@ -117,11 +123,14 @@ class MarketAnalytics(BaseModel):
     funding_annualized_pct: float | None = None
     liquidity_score: float
     data_quality_score: float
+    mark_oracle_divergence_bps: float | None = None
+    anomalies: list[str] = Field(default_factory=list)
     retrieved_at: str
     errors: list[str] = Field(default_factory=list)
 
 
 class RunReport(BaseModel):
+    schema_version: Literal["1.0"] = SCHEMA_VERSION
     retrieved_at: str
     endpoints: list[str]
     request_count: int

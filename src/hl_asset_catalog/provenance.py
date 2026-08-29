@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .models import SCHEMA_VERSION
 from .utils import atomic_json
 
 
@@ -41,7 +42,9 @@ def write_analysis_manifest(
     api_endpoint: str,
     arguments: dict[str, Any],
     cache_hits: int,
+    cache_corruptions: list[str],
     stale_cache_fallbacks: list[str],
+    network_metrics: dict[str, int | float],
 ) -> dict[str, Any]:
     generated_files = [
         "market_analytics.json",
@@ -51,7 +54,7 @@ def write_analysis_manifest(
         "medium_analysis.md",
     ]
     manifest: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": SCHEMA_VERSION,
         "retrieval_started_at": started_at,
         "retrieval_completed_at": datetime.now(UTC).isoformat(),
         "git_commit": git_revision(root),
@@ -63,8 +66,10 @@ def write_analysis_manifest(
         },
         "cache": {
             "fresh_hits": cache_hits,
+            "corruptions": cache_corruptions,
             "stale_fallbacks": stale_cache_fallbacks,
         },
+        "network": network_metrics,
     }
     atomic_json(output_dir / "analysis_manifest.json", manifest)
     return manifest

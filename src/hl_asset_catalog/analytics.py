@@ -11,20 +11,20 @@ from typing import Any
 
 from .benchmark_engine import deduplicate_markets
 from .hyperliquid_client import HyperliquidClient
-from .models import Instrument, MarketAnalytics
+from .models import SCHEMA_VERSION, Instrument, MarketAnalytics
 from .statistics import (
     OrderBookMetrics,
     annualized_volatility,
     close_prices,
     dated_correlation,
-    dated_returns,
     historical_var_95,
     max_drawdown,
     order_book_metrics,
     period_return,
+    session_returns,
     simple_returns,
 )
-from .utils import atomic_json
+from .utils import atomic_json, decimal_or_none
 
 
 def _liquidity_score(asset: Instrument, book: OrderBookMetrics) -> float:
@@ -50,6 +50,41 @@ def _quality_score(observations: int, values: list[object | None], errors: list[
     return round(max(0.0, (completeness * 0.7 + history * 0.3 - penalty) * 100), 2)
 
 
+def _market_anomalies(
+    asset: Instrument,
+    candles: list[dict[str, Any]],
+    book: dict[str, Any],
+    book_metrics: OrderBookMetrics,
+    *,
+    now_ms: int,
+    oracle_divergence_bps: float,
+    abnormal_spread_bps: float,
+    stale_candle_hours: float,
+) -> tuple[float | None, list[str]]:
+    anomalies: list[str] = []
+    divergence: float | None = None
+    if asset.mark_price and asset.oracle_price and asset.oracle_price > 0:
+        divergence = float(abs(asset.mark_price / asset.oracle_price - 1) * Decimal(10_000))
+        if divergence > oracle_divergence_bps:
+            anomalies.append("mark_oracle_divergence")
+    levels = book.get("levels", [])
+    bids = levels[0] if isinstance(levels, list) and len(levels) > 0 else []
+    asks = levels[1] if isinstance(levels, list) and len(levels) > 1 else []
+    if not bids or not asks:
+        anomalies.append("empty_order_book")
+    else:
+        best_bid = decimal_or_none(bids[0].get("px"))
+        best_ask = decimal_or_none(asks[0].get("px"))
+        if best_bid is not None and best_ask is not None and best_bid >= best_ask:
+            anomalies.append("crossed_order_book")
+    if book_metrics["spread_bps"] is not None and book_metrics["spread_bps"] > abnormal_spread_bps:
+        anomalies.append("abnormal_spread")
+    timestamps = [int(item["t"]) for item in candles if isinstance(item.get("t"), int)]
+    if not timestamps or now_ms - max(timestamps) > stale_candle_hours * 3_600_000:
+        anomalies.append("stale_candle_data")
+    return divergence, anomalies
+
+
 async def analyze_markets(
     client: HyperliquidClient,
     assets: list[Instrument],
@@ -73,7 +108,8 @@ async def analyze_markets(
     end_time = int(time.time() * 1000)
     start_time = end_time - lookback_days * 86_400_000
 
-    async def analyze(asset: Instrument) -> tuple[MarketAnalytics, dict[int, float]]:
+    async def analyze(index: int, asset: Instrument) -> tuple[MarketAnalytics, dict[str, float]]:
+        await client.analytics_jitter(index)
         errors: list[str] = []
         candles: list[dict[str, Any]] = []
         book: dict[str, Any] = {}
@@ -93,6 +129,16 @@ async def analyze_markets(
         prices = close_prices(candles)
         returns = simple_returns(prices)
         book_metrics = order_book_metrics(book)
+        divergence, anomalies = _market_anomalies(
+            asset,
+            candles,
+            book,
+            book_metrics,
+            now_ms=end_time,
+            oracle_divergence_bps=client.settings.oracle_divergence_bps,
+            abnormal_spread_bps=client.settings.abnormal_spread_bps,
+            stale_candle_hours=client.settings.stale_candle_hours,
+        )
         volatility = annualized_volatility(returns)
         drawdown = max_drawdown(prices)
         value_at_risk = historical_var_95(returns)
@@ -138,13 +184,15 @@ async def analyze_markets(
             funding_rate=asset.funding_rate,
             funding_annualized_pct=funding_annualized,
             liquidity_score=_liquidity_score(asset, book_metrics),
-            data_quality_score=_quality_score(len(prices), values, errors),
+            data_quality_score=_quality_score(len(prices), values, errors + anomalies),
+            mark_oracle_divergence_bps=divergence,
+            anomalies=anomalies,
             retrieved_at=datetime.now(UTC).isoformat(),
             errors=errors,
         )
-        return result, dated_returns(candles)
+        return result, session_returns(candles, is_24_7=asset.is_24_7, country=asset.country)
 
-    pairs = await asyncio.gather(*(analyze(asset) for asset in markets))
+    pairs = await asyncio.gather(*(analyze(index, asset) for index, asset in enumerate(markets)))
     results = [pair[0] for pair in pairs]
     return_map = {pair[0].symbol: pair[1] for pair in pairs}
     correlations: dict[str, dict[str, float | None]] = {}
@@ -167,8 +215,14 @@ def export_analytics(
 ) -> None:
     rows = [result.model_dump(mode="python") for result in results]
     atomic_json(output_dir / "market_analytics.json", rows)
-    atomic_json(output_dir / "correlation_matrix.json", correlations)
-    atomic_json(output_dir / "correlation_observations.json", correlation_observations)
+    atomic_json(
+        output_dir / "correlation_matrix.json",
+        {"schema_version": SCHEMA_VERSION, "data": correlations},
+    )
+    atomic_json(
+        output_dir / "correlation_observations.json",
+        {"schema_version": SCHEMA_VERSION, "data": correlation_observations},
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     with (output_dir / "market_analytics.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]) if rows else [])

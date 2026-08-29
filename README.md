@@ -26,6 +26,7 @@ hl-catalog validate
 hl-catalog build-baskets
 hl-catalog build-benchmarks
 hl-catalog analyze-markets --lookback-days 90 --max-assets 40
+hl-catalog backtest-benchmark history.json --symbol NVDA --symbol AMD
 hl-catalog export --format csv
 ```
 
@@ -77,7 +78,11 @@ Analytics outputs:
 - `correlation_observations.json`: common dated observations used for each correlation pair;
 - `benchmark_quality_report.json` and `.csv`: investability-oriented sector scores;
 - `analysis_manifest.json`: commit, arguments, timestamps, hashes and cache provenance;
+- `unknown_classification_report.json` and `.csv`: auditable triage queue for unknown markets;
 - `medium_analysis.md`: a publication-ready English analysis generated from the live results.
+
+Public JSON rows and matrix envelopes include `schema_version`. Schemas and compatibility rules are
+documented in [`schemas/`](schemas) and [`docs/SCHEMA_VERSIONING.md`](docs/SCHEMA_VERSIONING.md).
 
 The generated Medium article is intentionally tracked in `output/medium_analysis.md` as a
 publication snapshot. Its cover image is stored in `assets/medium-cover.jpg`, with source and

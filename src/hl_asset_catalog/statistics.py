@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Hashable, Mapping
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, TypedDict
+from zoneinfo import ZoneInfo
 
 from .utils import decimal_or_none
 
@@ -39,6 +42,34 @@ def dated_returns(candles: list[dict[str, Any]]) -> dict[int, float]:
     return {
         closes[index][0]: closes[index][1] / closes[index - 1][1] - 1
         for index in range(1, len(closes))
+    }
+
+
+COUNTRY_TIMEZONES = {
+    "United States": "America/New_York",
+    "China": "Asia/Shanghai",
+    "Japan": "Asia/Tokyo",
+    "South Korea": "Asia/Seoul",
+    "Taiwan": "Asia/Taipei",
+    "United Kingdom": "Europe/London",
+    "Eurozone": "Europe/Paris",
+    "India": "Asia/Kolkata",
+    "Brazil": "America/Sao_Paulo",
+}
+
+
+def session_returns(
+    candles: list[dict[str, Any]], *, is_24_7: bool | None, country: str | None
+) -> dict[str, float]:
+    """Return series keyed by the reference market's local session date."""
+    timezone = UTC if is_24_7 else ZoneInfo(COUNTRY_TIMEZONES.get(country or "", "UTC"))
+    dated = dated_returns(candles)
+    return {
+        datetime.fromtimestamp(timestamp / 1_000, tz=UTC)
+        .astimezone(timezone)
+        .date()
+        .isoformat(): value
+        for timestamp, value in dated.items()
     }
 
 
@@ -88,11 +119,14 @@ def correlation(left: list[float], right: list[float]) -> float | None:
     return covariance / denominator if denominator else None
 
 
-def dated_correlation(
-    left: dict[int, float], right: dict[int, float], *, minimum_observations: int = 20
+def dated_correlation[SessionKey: Hashable](
+    left: Mapping[SessionKey, float],
+    right: Mapping[SessionKey, float],
+    *,
+    minimum_observations: int = 20,
 ) -> tuple[float | None, int]:
     """Correlate returns only where both series have the same candle timestamp."""
-    shared = sorted(left.keys() & right.keys())
+    shared = sorted(left.keys() & right.keys(), key=str)
     observations = len(shared)
     if observations < minimum_observations:
         return None, observations
@@ -103,8 +137,15 @@ def order_book_metrics(
     book: dict[str, Any], *, target_notional: Decimal = Decimal("10000")
 ) -> OrderBookMetrics:
     levels = book.get("levels", [])
-    bids = levels[0] if len(levels) > 0 else []
-    asks = levels[1] if len(levels) > 1 else []
+    bids = sorted(
+        levels[0] if len(levels) > 0 else [],
+        key=lambda level: decimal_or_none(level.get("px")) or Decimal(0),
+        reverse=True,
+    )
+    asks = sorted(
+        levels[1] if len(levels) > 1 else [],
+        key=lambda level: decimal_or_none(level.get("px")) or Decimal("Infinity"),
+    )
     best_bid = decimal_or_none(bids[0].get("px")) if bids else None
     best_ask = decimal_or_none(asks[0].get("px")) if asks else None
     if best_bid is None or best_ask is None or best_bid <= 0 or best_ask <= 0:

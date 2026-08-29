@@ -20,10 +20,17 @@ def test_write_analysis_manifest(tmp_path: Path) -> None:
         api_endpoint="https://api.example.test/info",
         arguments={"lookback_days": 90},
         cache_hits=2,
+        cache_corruptions=["bad.json: JSONDecodeError"],
         stale_cache_fallbacks=["l2Book"],
+        network_metrics={"request_weight": 22, "rate_limit_responses": 1, "retry_wait_seconds": 2},
     )
 
-    assert manifest["schema_version"] == 1
+    assert manifest["schema_version"] == "1.0"
     assert manifest["git_commit"] is None
-    assert manifest["cache"] == {"fresh_hits": 2, "stale_fallbacks": ["l2Book"]}
+    assert manifest["cache"] == {
+        "fresh_hits": 2,
+        "corruptions": ["bad.json: JSONDecodeError"],
+        "stale_fallbacks": ["l2Book"],
+    }
     assert (tmp_path / "analysis_manifest.json").is_file()
+    assert manifest["network"]["request_weight"] == 22

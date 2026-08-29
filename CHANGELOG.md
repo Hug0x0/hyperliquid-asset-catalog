@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- Unknown-market triage reports and versioned public JSON schemas.
+- Atomic, corruption-safe API caching and adaptive weighted rate limiting.
+- Session-aware correlations, benchmark backtesting, and abnormal-market detection.
+- Property-based invariant tests and deterministic performance regression checks.
+- CycloneDX SBOMs, checksums, and build attestations for release artifacts.
 - Date-aligned correlation observation counts.
 - Reproducible analysis manifests.
 - API response validation and machine-readable CLI validation.

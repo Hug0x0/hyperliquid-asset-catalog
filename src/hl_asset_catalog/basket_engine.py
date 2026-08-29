@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 from pathlib import Path
 from typing import Literal
 
@@ -27,7 +27,8 @@ def _weights(assets: list[Instrument], method: str) -> tuple[dict[str, float], l
         raw = [Decimal(1) for _ in assets]
         total = Decimal(len(assets))
         warnings.append(f"Missing {method} data; equal weights used")
-    rounded = [round(value / total, 8) for value in raw]
+    quantum = Decimal("0.00000001")
+    rounded = [(value / total).quantize(quantum, rounding=ROUND_DOWN) for value in raw]
     rounded[-1] = Decimal(1) - sum(rounded[:-1])
     return {
         asset.canonical_symbol: float(weight) for asset, weight in zip(assets, rounded, strict=True)
