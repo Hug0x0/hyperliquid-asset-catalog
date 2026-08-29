@@ -17,11 +17,11 @@ from .statistics import (
     annualized_volatility,
     close_prices,
     dated_correlation,
-    dated_returns,
     historical_var_95,
     max_drawdown,
     order_book_metrics,
     period_return,
+    session_returns,
     simple_returns,
 )
 from .utils import atomic_json
@@ -73,7 +73,7 @@ async def analyze_markets(
     end_time = int(time.time() * 1000)
     start_time = end_time - lookback_days * 86_400_000
 
-    async def analyze(index: int, asset: Instrument) -> tuple[MarketAnalytics, dict[int, float]]:
+    async def analyze(index: int, asset: Instrument) -> tuple[MarketAnalytics, dict[str, float]]:
         await client.analytics_jitter(index)
         errors: list[str] = []
         candles: list[dict[str, Any]] = []
@@ -143,7 +143,7 @@ async def analyze_markets(
             retrieved_at=datetime.now(UTC).isoformat(),
             errors=errors,
         )
-        return result, dated_returns(candles)
+        return result, session_returns(candles, is_24_7=asset.is_24_7, country=asset.country)
 
     pairs = await asyncio.gather(*(analyze(index, asset) for index, asset in enumerate(markets)))
     results = [pair[0] for pair in pairs]

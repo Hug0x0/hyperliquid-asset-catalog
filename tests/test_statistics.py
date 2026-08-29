@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
@@ -11,6 +12,7 @@ from hl_asset_catalog.statistics import (
     max_drawdown,
     order_book_metrics,
     period_return,
+    session_returns,
     simple_returns,
 )
 
@@ -41,6 +43,32 @@ def test_dated_correlation_rejects_insufficient_overlap() -> None:
     value, observations = dated_correlation({1: 0.1, 2: 0.2}, {2: 0.2, 3: 0.3})
     assert value is None
     assert observations == 1
+
+
+def timestamp(value: str) -> int:
+    return int(datetime.fromisoformat(value).replace(tzinfo=UTC).timestamp() * 1_000)
+
+
+def test_session_returns_use_reference_market_dates() -> None:
+    candles = [
+        {"t": timestamp("2026-01-02T01:00:00"), "c": "100"},
+        {"t": timestamp("2026-01-03T01:00:00"), "c": "101"},
+    ]
+    crypto = session_returns(candles, is_24_7=True, country=None)
+    us_equity = session_returns(candles, is_24_7=False, country="United States")
+    assert list(crypto) == ["2026-01-03"]
+    assert list(us_equity) == ["2026-01-02"]
+
+
+def test_us_and_asia_sessions_do_not_pair_different_local_dates() -> None:
+    candles = [
+        {"t": timestamp("2026-01-02T01:00:00"), "c": "100"},
+        {"t": timestamp("2026-01-03T01:00:00"), "c": "101"},
+    ]
+    us = session_returns(candles, is_24_7=False, country="United States")
+    japan = session_returns(candles, is_24_7=False, country="Japan")
+    _, observations = dated_correlation(us, japan, minimum_observations=1)
+    assert observations == 0
 
 
 def test_order_book_liquidity_metrics() -> None:
