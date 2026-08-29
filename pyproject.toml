@@ -19,7 +19,7 @@ Repository = "https://github.com/Hug0x0/hyperliquid-asset-catalog"
 Issues = "https://github.com/Hug0x0/hyperliquid-asset-catalog/issues"
 
 [project.optional-dependencies]
-dev = ["mypy>=1.11", "pytest>=8.3", "pytest-asyncio>=0.24", "respx>=0.21", "ruff>=0.6", "types-PyYAML>=6"]
+dev = ["mypy>=1.11", "pip-audit>=2.9,<3", "pytest>=8.3", "pytest-asyncio>=0.24", "respx>=0.21", "ruff>=0.6", "types-PyYAML>=6"]
 
 [project.scripts]
 hl-catalog = "hl_asset_catalog.cli:app"
