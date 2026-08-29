@@ -148,7 +148,11 @@ def analyze_market_data(
         concurrency=concurrency,
     )
 
-    async def run() -> tuple[list[MarketAnalytics], dict[str, dict[str, float | None]]]:
+    async def run() -> tuple[
+        list[MarketAnalytics],
+        dict[str, dict[str, float | None]],
+        dict[str, dict[str, int]],
+    ]:
         async with HyperliquidClient(settings) as client:
             return await analyze_markets(
                 client,
@@ -158,8 +162,8 @@ def analyze_market_data(
                 force_refresh=force_refresh,
             )
 
-    analytics, correlations = asyncio.run(run())
-    export_analytics(analytics, correlations, output_dir)
+    analytics, correlations, correlation_observations = asyncio.run(run())
+    export_analytics(analytics, correlations, correlation_observations, output_dir)
     benchmarks = build_sector_benchmarks(assets, ROOT / "config/benchmark_definitions.yaml")
     quality = benchmark_quality(benchmarks, analytics)
     export_benchmark_quality(quality, output_dir)

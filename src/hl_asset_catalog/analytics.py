@@ -16,7 +16,8 @@ from .statistics import (
     OrderBookMetrics,
     annualized_volatility,
     close_prices,
-    correlation,
+    dated_correlation,
+    dated_returns,
     historical_var_95,
     max_drawdown,
     order_book_metrics,
@@ -56,7 +57,11 @@ async def analyze_markets(
     lookback_days: int = 90,
     max_assets: int = 40,
     force_refresh: bool = False,
-) -> tuple[list[MarketAnalytics], dict[str, dict[str, float | None]]]:
+) -> tuple[
+    list[MarketAnalytics],
+    dict[str, dict[str, float | None]],
+    dict[str, dict[str, int]],
+]:
     markets = sorted(
         deduplicate_markets(assets).values(),
         key=lambda asset: (
@@ -68,7 +73,7 @@ async def analyze_markets(
     end_time = int(time.time() * 1000)
     start_time = end_time - lookback_days * 86_400_000
 
-    async def analyze(asset: Instrument) -> tuple[MarketAnalytics, list[float]]:
+    async def analyze(asset: Instrument) -> tuple[MarketAnalytics, dict[int, float]]:
         errors: list[str] = []
         candles: list[dict[str, Any]] = []
         book: dict[str, Any] = {}
@@ -137,26 +142,33 @@ async def analyze_markets(
             retrieved_at=datetime.now(UTC).isoformat(),
             errors=errors,
         )
-        return result, returns
+        return result, dated_returns(candles)
 
     pairs = await asyncio.gather(*(analyze(asset) for asset in markets))
     results = [pair[0] for pair in pairs]
     return_map = {pair[0].symbol: pair[1] for pair in pairs}
-    correlations = {
-        left: {right: correlation(return_map[left], return_map[right]) for right in return_map}
-        for left in return_map
-    }
-    return results, correlations
+    correlations: dict[str, dict[str, float | None]] = {}
+    correlation_observations: dict[str, dict[str, int]] = {}
+    for left, left_series in return_map.items():
+        correlations[left] = {}
+        correlation_observations[left] = {}
+        for right, right_series in return_map.items():
+            value, observations = dated_correlation(left_series, right_series)
+            correlations[left][right] = value
+            correlation_observations[left][right] = observations
+    return results, correlations, correlation_observations
 
 
 def export_analytics(
     results: list[MarketAnalytics],
     correlations: dict[str, dict[str, float | None]],
+    correlation_observations: dict[str, dict[str, int]],
     output_dir: Path,
 ) -> None:
     rows = [result.model_dump(mode="python") for result in results]
     atomic_json(output_dir / "market_analytics.json", rows)
     atomic_json(output_dir / "correlation_matrix.json", correlations)
+    atomic_json(output_dir / "correlation_observations.json", correlation_observations)
     output_dir.mkdir(parents=True, exist_ok=True)
     with (output_dir / "market_analytics.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]) if rows else [])
