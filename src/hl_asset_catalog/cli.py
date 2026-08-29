@@ -12,6 +12,7 @@ from typing import Annotated
 import typer
 
 from .analytics import analyze_markets, export_analytics
+from .backtesting import backtest_benchmark, export_backtest
 from .basket_engine import build_baskets as evaluate_baskets
 from .benchmark_engine import build_sector_benchmarks, export_benchmark_report
 from .classification import Classifier
@@ -56,6 +57,12 @@ class LogLevel(StrEnum):
     INFO = "INFO"
     WARNING = "WARNING"
     ERROR = "ERROR"
+
+
+class BacktestWeighting(StrEnum):
+    EQUAL = "equal"
+    LIQUIDITY = "liquidity"
+    INVERSE_VOLATILITY = "inverse_volatility"
 
 
 def _validate_writable_directory(path: Path, option_name: str) -> Path:
@@ -312,6 +319,30 @@ def export(
     output_dir = _validate_writable_directory(output_dir, "--output-dir")
     export_catalog(_load(output_dir), output_dir)
     typer.echo(f"Exported {format.value} to {output_dir}")
+
+
+@app.command("backtest-benchmark")
+def backtest_benchmark_command(
+    history_path: Path,
+    symbols: Annotated[list[str], typer.Option("--symbol")],
+    output_path: Path = Path("output/benchmark_backtest.json"),
+    weighting: BacktestWeighting = BacktestWeighting.EQUAL,
+    rebalance_every: Annotated[int, typer.Option(min=1)] = 5,
+) -> None:
+    """Backtest a benchmark from a local point-in-time history without look-ahead."""
+    if not history_path.is_file():
+        raise typer.BadParameter(f"{history_path} does not exist", param_hint="history_path")
+    history = json.loads(history_path.read_text(encoding="utf-8"))
+    if not isinstance(history, list):
+        raise typer.BadParameter("history must be a JSON array", param_hint="history_path")
+    result = backtest_benchmark(
+        history,
+        symbols=[symbol.upper() for symbol in symbols],
+        weighting=weighting.value,
+        rebalance_every=rebalance_every,
+    )
+    export_backtest(result, output_path)
+    typer.echo(f"Wrote {result['observations']} backtest observations to {output_path}")
 
 
 if __name__ == "__main__":
