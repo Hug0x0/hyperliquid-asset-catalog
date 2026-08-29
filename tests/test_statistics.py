@@ -5,6 +5,8 @@ import pytest
 from hl_asset_catalog.statistics import (
     annualized_volatility,
     correlation,
+    dated_correlation,
+    dated_returns,
     historical_var_95,
     max_drawdown,
     order_book_metrics,
@@ -21,6 +23,24 @@ def test_return_and_risk_statistics() -> None:
     assert max_drawdown(prices) == 0
     assert historical_var_95(returns) is not None
     assert correlation(returns, returns) == pytest.approx(1.0)
+
+
+def test_dated_correlation_uses_only_shared_candle_timestamps() -> None:
+    left_candles = [{"t": day, "c": str(100 + day)} for day in range(22)]
+    right_candles = [{"t": day, "c": str(200 + day * 2)} for day in range(1, 23)]
+    left = dated_returns(left_candles)
+    right = dated_returns(right_candles)
+
+    value, observations = dated_correlation(left, right)
+
+    assert observations == 20
+    assert value == pytest.approx(1.0)
+
+
+def test_dated_correlation_rejects_insufficient_overlap() -> None:
+    value, observations = dated_correlation({1: 0.1, 2: 0.2}, {2: 0.2, 3: 0.3})
+    assert value is None
+    assert observations == 1
 
 
 def test_order_book_liquidity_metrics() -> None:

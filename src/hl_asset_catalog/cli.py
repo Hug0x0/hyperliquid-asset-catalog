@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
+from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -14,14 +17,56 @@ from .benchmark_engine import build_sector_benchmarks, export_benchmark_report
 from .classification import Classifier
 from .config import Settings
 from .discovery import discover_catalog
-from .exporters import export_catalog, make_report, validate_catalog
+from .exporters import export_catalog, make_report, validate_catalog_report
 from .hyperliquid_client import HyperliquidClient
 from .models import Instrument, MarketAnalytics
+from .provenance import git_revision, write_analysis_manifest
 from .reporting import benchmark_quality, export_benchmark_quality, generate_medium_article
 from .utils import atomic_json
 
 app = typer.Typer(no_args_is_help=True, help="Read-only Hyperliquid asset catalog")
 ROOT = Path(__file__).resolve().parents[2]
+
+
+class MarketTypeOption(StrEnum):
+    PERP = "perp"
+    SPOT = "spot"
+
+
+class AssetClassOption(StrEnum):
+    CRYPTO = "crypto"
+    EQUITY = "equity"
+    EQUITY_INDEX = "equity_index"
+    COMMODITY = "commodity"
+    FOREX = "forex"
+    INTEREST_RATE = "interest_rate"
+    VOLATILITY_INDEX = "volatility_index"
+    PRE_IPO = "pre_ipo"
+    SPOT_CRYPTO = "spot_crypto"
+    UNKNOWN = "unknown"
+
+
+class OutputFormat(StrEnum):
+    JSON = "json"
+    CSV = "csv"
+
+
+class LogLevel(StrEnum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+
+
+def _validate_writable_directory(path: Path, option_name: str) -> Path:
+    if path.exists() and not path.is_dir():
+        raise typer.BadParameter(f"{path} is not a directory", param_hint=option_name)
+    probe = path
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    if not probe.is_dir() or not os.access(probe, os.W_OK):
+        raise typer.BadParameter(f"{path} is not writable", param_hint=option_name)
+    return path
 
 
 async def _fetch(
@@ -46,23 +91,30 @@ def _load(output_dir: Path) -> list[Instrument]:
 @app.command()
 def fetch(
     dex: str | None = None,
-    market_type: Annotated[str | None, typer.Option(help="perp or spot")] = None,
-    asset_class: str | None = None,
+    market_type: MarketTypeOption | None = None,
+    asset_class: AssetClassOption | None = None,
     tag: str | None = None,
     active_only: bool = False,
     output_dir: Path = Path("output"),
+    cache_dir: Path = Path(".cache/hl_asset_catalog"),
     timeout: float = 20,
     max_retries: int = 4,
     concurrency: int = 4,
     pretty: bool = True,
     include_raw: bool = True,
-    log_level: str = "INFO",
+    log_level: LogLevel = LogLevel.INFO,
     force_refresh: bool = False,
 ) -> None:
     """Discover every DEX dynamically and write a normalized catalog."""
-    logging.basicConfig(level=log_level.upper(), format="%(asctime)s %(levelname)s %(message)s")
+    output_dir = _validate_writable_directory(output_dir, "--output-dir")
+    cache_dir = _validate_writable_directory(cache_dir, "--cache-dir")
+    logging.basicConfig(level=log_level.value, format="%(asctime)s %(levelname)s %(message)s")
     settings = Settings(
-        output_dir=output_dir, timeout=timeout, max_retries=max_retries, concurrency=concurrency
+        output_dir=output_dir,
+        cache_dir=cache_dir,
+        timeout=timeout,
+        max_retries=max_retries,
+        concurrency=concurrency,
     )
     assets, client, errors = asyncio.run(_fetch(settings, force_refresh=force_refresh))
     filtered = [
@@ -84,6 +136,8 @@ def fetch(
     )
     atomic_json(output_dir / "run_report.json", report.model_dump(mode="python"), pretty=pretty)
     typer.echo(f"Wrote {len(filtered)} assets to {output_dir}")
+    if errors or client.errors:
+        raise typer.Exit(code=2)
 
 
 @app.command("list-dexes")
@@ -97,11 +151,28 @@ def list_dexes(timeout: float = 20) -> None:
 
 
 @app.command()
-def validate(output_dir: Path = Path("output")) -> None:
-    warnings = validate_catalog(_load(output_dir))
-    for warning in warnings:
-        typer.echo(f"WARNING: {warning}")
-    typer.echo(f"Validation complete: {len(warnings)} warning(s)")
+def validate(
+    output_dir: Path = Path("output"),
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Emit machine-readable findings")
+    ] = False,
+) -> None:
+    report = validate_catalog_report(_load(output_dir))
+    if json_output:
+        typer.echo(json.dumps(report, indent=2, sort_keys=True))
+    for error in report["errors"]:
+        if not json_output:
+            typer.echo(f"ERROR: {error}")
+    for warning in report["warnings"]:
+        if not json_output:
+            typer.echo(f"WARNING: {warning}")
+    if not json_output:
+        typer.echo(
+            f"Validation complete: {len(report['errors'])} error(s), "
+            f"{len(report['warnings'])} warning(s)"
+        )
+    if report["errors"]:
+        raise typer.Exit(code=1)
 
 
 @app.command("build-baskets")
@@ -132,6 +203,7 @@ def build_benchmarks(output_dir: Path = Path("output")) -> None:
 @app.command("analyze-markets")
 def analyze_market_data(
     output_dir: Path = Path("output"),
+    cache_dir: Path = Path(".cache/hl_asset_catalog"),
     lookback_days: Annotated[int, typer.Option(min=30, max=365)] = 90,
     max_assets: Annotated[int, typer.Option(min=1, max=45)] = 40,
     timeout: float = 20,
@@ -141,25 +213,39 @@ def analyze_market_data(
 ) -> None:
     """Compute risk, liquidity, correlation and benchmark quality analytics."""
     assets = _load(output_dir)
+    output_dir = _validate_writable_directory(output_dir, "--output-dir")
+    cache_dir = _validate_writable_directory(cache_dir, "--cache-dir")
+    started_at = datetime.now(UTC).isoformat()
+    revision = git_revision(ROOT)
     settings = Settings(
         output_dir=output_dir,
+        cache_dir=cache_dir,
         timeout=timeout,
         max_retries=max_retries,
         concurrency=concurrency,
     )
 
-    async def run() -> tuple[list[MarketAnalytics], dict[str, dict[str, float | None]]]:
+    async def run() -> tuple[
+        list[MarketAnalytics],
+        dict[str, dict[str, float | None]],
+        dict[str, dict[str, int]],
+        int,
+        list[str],
+    ]:
         async with HyperliquidClient(settings) as client:
-            return await analyze_markets(
+            results = await analyze_markets(
                 client,
                 assets,
                 lookback_days=lookback_days,
                 max_assets=max_assets,
                 force_refresh=force_refresh,
             )
+            return (*results, client.cache_hits, client.stale_cache_fallbacks)
 
-    analytics, correlations = asyncio.run(run())
-    export_analytics(analytics, correlations, output_dir)
+    analytics, correlations, correlation_observations, cache_hits, stale_fallbacks = asyncio.run(
+        run()
+    )
+    export_analytics(analytics, correlations, correlation_observations, output_dir)
     benchmarks = build_sector_benchmarks(assets, ROOT / "config/benchmark_definitions.yaml")
     quality = benchmark_quality(benchmarks, analytics)
     export_benchmark_quality(quality, output_dir)
@@ -174,6 +260,23 @@ def analyze_market_data(
         total_non_crypto=non_crypto_count,
         lookback_days=lookback_days,
         output_path=output_dir / "medium_analysis.md",
+        git_commit=revision,
+    )
+    write_analysis_manifest(
+        output_dir,
+        root=ROOT,
+        started_at=started_at,
+        api_endpoint=settings.api_url,
+        arguments={
+            "lookback_days": lookback_days,
+            "max_assets": max_assets,
+            "timeout": timeout,
+            "max_retries": max_retries,
+            "concurrency": concurrency,
+            "force_refresh": force_refresh,
+        },
+        cache_hits=cache_hits,
+        stale_cache_fallbacks=stale_fallbacks,
     )
     typer.echo(
         f"Analyzed {len(analytics)} markets over {lookback_days} days; "
@@ -183,12 +286,12 @@ def analyze_market_data(
 
 @app.command()
 def export(
-    format: Annotated[str, typer.Option()] = "json", output_dir: Path = Path("output")
+    format: Annotated[OutputFormat, typer.Option()] = OutputFormat.JSON,
+    output_dir: Path = Path("output"),
 ) -> None:
-    if format not in {"json", "csv"}:
-        raise typer.BadParameter("format must be json or csv")
+    output_dir = _validate_writable_directory(output_dir, "--output-dir")
     export_catalog(_load(output_dir), output_dir)
-    typer.echo(f"Exported {format} to {output_dir}")
+    typer.echo(f"Exported {format.value} to {output_dir}")
 
 
 if __name__ == "__main__":

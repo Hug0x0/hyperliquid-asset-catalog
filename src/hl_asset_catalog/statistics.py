@@ -28,6 +28,20 @@ def simple_returns(prices: list[float]) -> list[float]:
     return [prices[index] / prices[index - 1] - 1 for index in range(1, len(prices))]
 
 
+def dated_returns(candles: list[dict[str, Any]]) -> dict[int, float]:
+    """Return close-to-close returns keyed by the closing candle timestamp."""
+    closes: list[tuple[int, float]] = []
+    for candle in sorted(candles, key=lambda item: int(item.get("t", 0))):
+        timestamp = candle.get("t")
+        value = decimal_or_none(candle.get("c"))
+        if isinstance(timestamp, int) and value is not None and value > 0:
+            closes.append((timestamp, float(value)))
+    return {
+        closes[index][0]: closes[index][1] / closes[index - 1][1] - 1
+        for index in range(1, len(closes))
+    }
+
+
 def period_return(prices: list[float], days: int) -> float | None:
     if len(prices) <= days or prices[-days - 1] <= 0:
         return None
@@ -72,6 +86,17 @@ def correlation(left: list[float], right: list[float]) -> float | None:
     variance_y = sum((b - mean_y) ** 2 for b in y)
     denominator = math.sqrt(variance_x * variance_y)
     return covariance / denominator if denominator else None
+
+
+def dated_correlation(
+    left: dict[int, float], right: dict[int, float], *, minimum_observations: int = 20
+) -> tuple[float | None, int]:
+    """Correlate returns only where both series have the same candle timestamp."""
+    shared = sorted(left.keys() & right.keys())
+    observations = len(shared)
+    if observations < minimum_observations:
+        return None, observations
+    return correlation([left[key] for key in shared], [right[key] for key in shared]), observations
 
 
 def order_book_metrics(

@@ -1,0 +1,46 @@
+name: Upstream API smoke test
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e .
+      - name: Discover DEXes
+        id: dexes
+        continue-on-error: true
+        run: hl-catalog list-dexes --timeout 30
+      - name: Fetch and validate catalog
+        id: catalog
+        continue-on-error: true
+        run: |
+          hl-catalog fetch --active-only --output-dir smoke-output --cache-dir smoke-cache
+          hl-catalog validate --output-dir smoke-output --json
+      - name: Upload failure report
+        if: always() && (steps.dexes.outcome == 'failure' || steps.catalog.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: upstream-smoke-report
+          path: smoke-output/run_report.json
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Enforce smoke-test result
+        if: always()
+        env:
+          DEX_OUTCOME: ${{ steps.dexes.outcome }}
+          CATALOG_OUTCOME: ${{ steps.catalog.outcome }}
+        run: test "$DEX_OUTCOME" = success -a "$CATALOG_OUTCOME" = success

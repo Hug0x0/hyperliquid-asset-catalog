@@ -1,0 +1,52 @@
+name: Classification change
+description: Propose an auditable asset classification correction
+title: "data: classify "
+labels: [enhancement]
+body:
+  - type: input
+    id: market
+    attributes:
+      label: Symbol and DEX
+      placeholder: "xyz:NVDA"
+    validations:
+      required: true
+  - type: dropdown
+    id: asset_class
+    attributes:
+      label: Proposed asset class
+      options:
+        - crypto
+        - equity
+        - equity_index
+        - commodity
+        - forex
+        - interest_rate
+        - volatility_index
+        - pre_ipo
+        - spot_crypto
+        - unknown
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Authoritative evidence
+      description: Provide the source URL, publisher, relevant fact, and date checked.
+    validations:
+      required: true
+  - type: textarea
+    id: metadata
+    attributes:
+      label: Proposed metadata
+      description: Country, subcategory, tags, underlying symbol, and aliases where applicable.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I verified that the market exists in the public Hyperliquid Info API.
+          required: true
+        - label: I searched for an existing issue covering this symbol.
+          required: true
