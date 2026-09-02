@@ -8,3 +8,5 @@ Run `hl-catalog calibrate-scores` to compare the implementation contract with th
 The fixture is synthetic and checks bounds, monotonic missing-data behavior and rank stability. It is
 not labelled market ground truth and the scores do not forecast returns, solvency or execution.
 Any weight or threshold change must bump the score version and include a before/after report.
+Every analytics row embeds `score_version`, allowing consumers to reject or partition changed
+methodologies explicitly.

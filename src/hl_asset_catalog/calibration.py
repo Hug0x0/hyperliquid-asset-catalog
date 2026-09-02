@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-SCORE_VERSION = "1.0.0"
+from .models import SCORE_VERSION
 
 
 def _ranks(values: list[float]) -> list[float]:

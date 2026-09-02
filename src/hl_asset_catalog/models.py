@@ -7,6 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 SCHEMA_VERSION: Literal["1.0"] = "1.0"
+SCORE_VERSION: Literal["1.0.0"] = "1.0.0"
 
 AssetClass = Literal[
     "crypto",
@@ -104,6 +105,7 @@ class BenchmarkResult(BaseModel):
 
 class MarketAnalytics(BaseModel):
     schema_version: Literal["1.0"] = SCHEMA_VERSION
+    score_version: Literal["1.0.0"] = SCORE_VERSION
     instrument_id: str
     symbol: str
     dex: str
