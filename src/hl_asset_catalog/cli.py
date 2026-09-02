@@ -61,6 +61,12 @@ class OutputFormat(StrEnum):
     PARQUET = "parquet"
 
 
+class QueryFormat(StrEnum):
+    TABLE = "table"
+    JSON = "json"
+    JSONL = "jsonl"
+
+
 class LogLevel(StrEnum):
     DEBUG = "DEBUG"
     INFO = "INFO"
@@ -102,6 +108,50 @@ def _load(output_dir: Path) -> list[Instrument]:
     return [
         Instrument.model_validate(item) for item in json.loads(path.read_text(encoding="utf-8"))
     ]
+
+
+@app.command()
+def query(
+    output_dir: Path = Path("output"),
+    where: Annotated[list[str] | None, typer.Option("--where")] = None,
+    sort_by: str = "id",
+    descending: bool = False,
+    fields: str = "id,canonical_symbol,dex,market_type,asset_class",
+    limit: Annotated[int, typer.Option(min=0)] = 100,
+    format: QueryFormat = QueryFormat.TABLE,
+) -> None:
+    """Filter and project a local catalog deterministically."""
+    available = set(Instrument.model_fields)
+    selected = [field.strip() for field in fields.split(",") if field.strip()]
+    invalid = sorted((set(selected) | {sort_by}) - available)
+    filters: list[tuple[str, str]] = []
+    for expression in where or []:
+        if "=" not in expression:
+            raise typer.BadParameter("filters must use FIELD=VALUE", param_hint="--where")
+        key, value = expression.split("=", 1)
+        if key not in available:
+            invalid.append(key)
+        filters.append((key, value))
+    if invalid:
+        raise typer.BadParameter(f"unknown field(s): {', '.join(sorted(set(invalid)))}")
+    rows = [asset.model_dump(mode="json") for asset in _load(output_dir)]
+    rows = [
+        row
+        for row in rows
+        if all(str(row.get(key, "")).lower() == value.lower() for key, value in filters)
+    ]
+    rows.sort(
+        key=lambda row: (row.get(sort_by) is None, str(row.get(sort_by, ""))), reverse=descending
+    )
+    projected = [{key: row.get(key) for key in selected} for row in rows[:limit]]
+    if format is QueryFormat.JSON:
+        typer.echo(json.dumps(projected, indent=2, sort_keys=True))
+    elif format is QueryFormat.JSONL:
+        typer.echo("".join(json.dumps(row, sort_keys=True) + "\n" for row in projected), nl=False)
+    else:
+        typer.echo("\t".join(selected))
+        for row in projected:
+            typer.echo("\t".join("" if row[key] is None else str(row[key]) for key in selected))
 
 
 @app.command()

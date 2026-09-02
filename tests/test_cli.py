@@ -54,3 +54,40 @@ def test_validate_returns_nonzero_for_catalog_errors(tmp_path: Path) -> None:
 
     assert result.exit_code == 1
     assert "Duplicate id: duplicate" in result.output
+
+
+def test_query_filters_sorts_and_projects_json(tmp_path: Path) -> None:
+    assets = [
+        Instrument(
+            id="b", canonical_symbol="B", exchange_symbol="B", dex="xyz", market_type="perp"
+        ),
+        Instrument(
+            id="a", canonical_symbol="A", exchange_symbol="A", dex="native", market_type="perp"
+        ),
+    ]
+    (tmp_path / "all_assets.json").write_text(
+        json.dumps([asset.model_dump(mode="json") for asset in assets]), encoding="utf-8"
+    )
+    result = runner.invoke(
+        app,
+        [
+            "query",
+            "--output-dir",
+            str(tmp_path),
+            "--where",
+            "market_type=perp",
+            "--fields",
+            "id,dex",
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code == 0
+    assert json.loads(result.output) == [{"dex": "native", "id": "a"}, {"dex": "xyz", "id": "b"}]
+
+
+def test_query_rejects_unknown_field(tmp_path: Path) -> None:
+    (tmp_path / "all_assets.json").write_text("[]", encoding="utf-8")
+    result = runner.invoke(app, ["query", "--output-dir", str(tmp_path), "--fields", "nope"])
+    assert result.exit_code == 2
+    assert "unknown field" in result.output

@@ -35,6 +35,7 @@ hl-catalog monitor-tradexyz-docs https://example/documentation
 hl-catalog backtest-benchmark history.json --symbol NVDA --symbol AMD
 hl-catalog export --format csv
 hl-catalog export --format parquet  # requires the parquet extra
+hl-catalog query --where asset_class=equity --sort-by canonical_symbol --format json
 ```
 
 `fetch` discovers the DEX list first and queries metadata/context for each DEX concurrently.
