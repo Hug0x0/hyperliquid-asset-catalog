@@ -19,6 +19,7 @@ pip install -e '.[dev]'
 ```bash
 hl-catalog list-dexes
 hl-catalog fetch --pretty --include-raw
+hl-catalog fetch --json-logs
 hl-catalog fetch --dex xyz --active-only
 hl-catalog fetch --market-type spot
 hl-catalog fetch --asset-class equity --tag semiconductors

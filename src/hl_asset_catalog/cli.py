@@ -24,6 +24,7 @@ from .events import diff_catalogs, load_snapshot
 from .exporters import export_catalog, make_report, validate_catalog_report
 from .hyperliquid_client import HyperliquidClient
 from .models import Instrument, MarketAnalytics
+from .observability import configure_logging, log_summary
 from .parquet_export import export_parquet
 from .provenance import git_revision, write_analysis_manifest
 from .reporting import benchmark_quality, export_benchmark_quality, generate_medium_article
@@ -175,12 +176,13 @@ def fetch(
     pretty: bool = True,
     include_raw: bool = True,
     log_level: LogLevel = LogLevel.INFO,
+    json_logs: Annotated[bool, typer.Option("--json-logs")] = False,
     force_refresh: bool = False,
 ) -> None:
     """Discover every DEX dynamically and write a normalized catalog."""
     output_dir = _validate_writable_directory(output_dir, "--output-dir")
     cache_dir = _validate_writable_directory(cache_dir, "--cache-dir")
-    logging.basicConfig(level=log_level.value, format="%(asctime)s %(levelname)s %(message)s")
+    correlation_id = configure_logging(log_level.value, json_logs=json_logs)
     settings = Settings(
         output_dir=output_dir,
         cache_dir=cache_dir,
@@ -207,6 +209,16 @@ def fetch(
         changes=changes,
     )
     atomic_json(output_dir / "run_report.json", report.model_dump(mode="python"), pretty=pretty)
+    log_summary(
+        logging.getLogger("hl_asset_catalog.fetch"),
+        operation="fetch",
+        correlation_id=correlation_id,
+        counts={
+            "assets": len(filtered),
+            "requests": client.request_count,
+            "failures": len(errors) + len(client.errors),
+        },
+    )
     typer.echo(f"Wrote {len(filtered)} assets to {output_dir}")
     if errors or client.errors:
         raise typer.Exit(code=2)
