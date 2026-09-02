@@ -15,6 +15,7 @@ from .analytics import analyze_markets, export_analytics
 from .backtesting import backtest_benchmark, export_backtest
 from .basket_engine import build_baskets as evaluate_baskets
 from .benchmark_engine import build_sector_benchmarks, export_benchmark_report
+from .calibration import evaluate_calibration
 from .classification import Classifier
 from .config import Settings
 from .discovery import discover_catalog
@@ -138,6 +139,25 @@ def diff_events(
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(payload, encoding="utf-8")
         typer.echo(f"Wrote {len(events)} events to {output}")
+
+
+@app.command("calibrate-scores")
+def calibrate_scores(
+    fixture: Path = ROOT / "config/score_calibration.json",
+    output: Path | None = None,
+) -> None:
+    """Evaluate deterministic score calibration and rank stability."""
+    try:
+        report = evaluate_calibration(fixture)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise typer.BadParameter(str(exc), param_hint="--fixture") from exc
+    payload = json.dumps(report, indent=2, sort_keys=True)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(payload + "\n", encoding="utf-8")
+    typer.echo(payload)
+    if not report["bounds_valid"] or report["rank_correlation"] < 0.9:
+        raise typer.Exit(code=1)
 
 
 @app.command()
