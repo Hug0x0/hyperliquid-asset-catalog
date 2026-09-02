@@ -24,6 +24,7 @@ hl-catalog fetch --market-type spot
 hl-catalog fetch --asset-class equity --tag semiconductors
 hl-catalog validate
 hl-catalog doctor --json
+hl-catalog diff-events previous.json current.json --output events.jsonl
 hl-catalog build-baskets
 hl-catalog build-benchmarks
 hl-catalog analyze-markets --lookback-days 90 --max-assets 40

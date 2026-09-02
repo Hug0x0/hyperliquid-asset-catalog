@@ -19,6 +19,7 @@ from .classification import Classifier
 from .config import Settings
 from .discovery import discover_catalog
 from .doctor import doctor_exit_code, run_doctor
+from .events import diff_catalogs, load_snapshot
 from .exporters import export_catalog, make_report, validate_catalog_report
 from .hyperliquid_client import HyperliquidClient
 from .models import Instrument, MarketAnalytics
@@ -112,6 +113,29 @@ def doctor(
     code = doctor_exit_code(report)
     if code:
         raise typer.Exit(code=code)
+
+
+@app.command("diff-events")
+def diff_events(
+    previous: Path,
+    current: Path,
+    output: Path | None = None,
+    observed_at: str | None = None,
+) -> None:
+    """Emit deterministic JSONL events between two catalog snapshots."""
+    try:
+        events = diff_catalogs(
+            load_snapshot(previous), load_snapshot(current), observed_at=observed_at
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    payload = "".join(json.dumps(event, sort_keys=True, default=str) + "\n" for event in events)
+    if output is None:
+        typer.echo(payload, nl=False)
+    else:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(payload, encoding="utf-8")
+        typer.echo(f"Wrote {len(events)} events to {output}")
 
 
 @app.command()
