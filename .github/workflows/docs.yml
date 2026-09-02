@@ -22,7 +22,7 @@ jobs:
       - run: mkdocs build --strict
       - uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress './site/**/*.html'
+          args: --no-progress --root-dir site './site/**/*.html'
       - run: npm install -g @lhci/cli@0.15.x
       - run: lhci autorun
       - uses: actions/upload-pages-artifact@v3
