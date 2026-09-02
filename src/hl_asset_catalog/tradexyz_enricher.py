@@ -71,7 +71,9 @@ class TradeXYZEnricher:
         if cache_path.exists():
             loaded = json.loads(cache_path.read_text(encoding="utf-8"))
             cached = loaded if isinstance(loaded, dict) else {}
-            if time.time() - float(cached.get("fetched_at", 0)) < ttl_seconds:
+            fetched_at = cached.get("fetched_at", 0)
+            cached_time = float(fetched_at) if isinstance(fetched_at, (int, float)) else 0.0
+            if time.time() - cached_time < ttl_seconds:
                 return {**cached, "cache_hit": True}
         response = httpx.get(url, headers={"User-Agent": "hl-asset-catalog/0.1"}, timeout=20)
         response.raise_for_status()
