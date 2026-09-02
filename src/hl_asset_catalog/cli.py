@@ -160,9 +160,14 @@ def doctor(
     output_dir: Path = Path("output"),
     cache_dir: Path = Path(".cache/hl_asset_catalog"),
     json_output: Annotated[bool, typer.Option("--json")] = False,
+    check_network: bool = False,
 ) -> None:
     """Run safe, read-only configuration and cache diagnostics."""
-    report = run_doctor(ROOT, Settings(output_dir=output_dir, cache_dir=cache_dir))
+    report = run_doctor(
+        ROOT,
+        Settings(output_dir=output_dir, cache_dir=cache_dir),
+        check_network=check_network,
+    )
     if json_output:
         typer.echo(json.dumps(report, indent=2, sort_keys=True))
     else:

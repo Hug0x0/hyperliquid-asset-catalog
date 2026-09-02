@@ -8,6 +8,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal, TypedDict
 
+import httpx
+
 from .config import Settings, load_yaml
 
 DoctorStatus = Literal["pass", "warning", "failure"]
@@ -33,7 +35,7 @@ def redact(value: str) -> str:
     return _SECRET_PATTERN.sub(lambda match: f"{match.group(1)}=<redacted>", value)
 
 
-def run_doctor(root: Path, settings: Settings) -> DoctorReport:
+def run_doctor(root: Path, settings: Settings, *, check_network: bool = False) -> DoctorReport:
     checks: list[DoctorCheck] = []
     checks.append(
         DoctorCheck(
@@ -42,6 +44,18 @@ def run_doctor(root: Path, settings: Settings) -> DoctorReport:
             f"Python {platform.python_version()}",
         )
     )
+    if check_network:
+        try:
+            response = httpx.post(
+                settings.api_url,
+                json={"type": "perpDexs"},
+                timeout=settings.timeout,
+                headers={"User-Agent": settings.user_agent},
+            )
+            response.raise_for_status()
+            checks.append(DoctorCheck("upstream_connectivity", "pass", "Info API reachable"))
+        except httpx.HTTPError as exc:
+            checks.append(DoctorCheck("upstream_connectivity", "failure", redact(str(exc))))
     for name, path in (("output_dir", settings.output_dir), ("cache_dir", settings.cache_dir)):
         parent = path if path.exists() else path.parent
         status: DoctorStatus = "pass" if parent.exists() and parent.is_dir() else "warning"
