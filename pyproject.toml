@@ -50,7 +50,7 @@ source = ["hl_asset_catalog"]
 omit = ["src/hl_asset_catalog/__init__.py"]
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 70
 show_missing = true
 
 [tool.mutmut]

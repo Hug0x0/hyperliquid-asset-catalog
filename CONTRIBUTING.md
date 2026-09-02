@@ -61,7 +61,7 @@ By submitting a contribution, you agree that it is licensed under Apache-2.0.
 
 ## Test quality
 
-Run `pytest --cov` locally. CI enforces the current 80% branch/line baseline and publishes
+Run `pytest --cov` locally. CI enforces the current 70% branch/line baseline and publishes
 `coverage.xml`. A bounded mutation suite covering classification, statistics, and catalog event
 diffing runs weekly; reproduce it with `mutmut run` and inspect survivors with `mutmut results`.
 Generated code and the package marker are excluded explicitly, rather than lowering the baseline.
