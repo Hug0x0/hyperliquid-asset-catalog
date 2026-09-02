@@ -30,6 +30,7 @@ hl-catalog build-benchmarks
 hl-catalog analyze-markets --lookback-days 90 --max-assets 40
 hl-catalog backtest-benchmark history.json --symbol NVDA --symbol AMD
 hl-catalog export --format csv
+hl-catalog export --format parquet  # requires the parquet extra
 ```
 
 `fetch` discovers the DEX list first and queries metadata/context for each DEX concurrently.

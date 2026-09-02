@@ -23,6 +23,7 @@ from .events import diff_catalogs, load_snapshot
 from .exporters import export_catalog, make_report, validate_catalog_report
 from .hyperliquid_client import HyperliquidClient
 from .models import Instrument, MarketAnalytics
+from .parquet_export import export_parquet
 from .provenance import git_revision, write_analysis_manifest
 from .reporting import benchmark_quality, export_benchmark_quality, generate_medium_article
 from .utils import atomic_json
@@ -52,6 +53,7 @@ class AssetClassOption(StrEnum):
 class OutputFormat(StrEnum):
     JSON = "json"
     CSV = "csv"
+    PARQUET = "parquet"
 
 
 class LogLevel(StrEnum):
@@ -360,8 +362,16 @@ def export(
     output_dir: Path = Path("output"),
 ) -> None:
     output_dir = _validate_writable_directory(output_dir, "--output-dir")
-    export_catalog(_load(output_dir), output_dir)
-    typer.echo(f"Exported {format.value} to {output_dir}")
+    assets = _load(output_dir)
+    if format is OutputFormat.PARQUET:
+        try:
+            path = export_parquet(assets, output_dir / "parquet")
+        except RuntimeError as exc:
+            raise typer.BadParameter(str(exc), param_hint="--format") from exc
+        typer.echo(f"Exported parquet to {path}")
+    else:
+        export_catalog(assets, output_dir)
+        typer.echo(f"Exported {format.value} to {output_dir}")
 
 
 @app.command("backtest-benchmark")
