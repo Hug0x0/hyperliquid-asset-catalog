@@ -14,6 +14,8 @@ source .venv/bin/activate
 pip install -e '.[dev]'
 ```
 
+Release containers are documented in [`docs/CONTAINER.md`](docs/CONTAINER.md).
+
 ## Usage
 
 ```bash
