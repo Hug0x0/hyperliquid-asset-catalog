@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
@@ -485,7 +486,10 @@ def analyze_market_data(
 def export(
     format: Annotated[OutputFormat, typer.Option()] = OutputFormat.JSON,
     output_dir: Path = Path("output"),
+    json_logs: Annotated[bool, typer.Option("--json-logs")] = False,
 ) -> None:
+    started = time.perf_counter()
+    correlation_id = configure_logging(LogLevel.INFO.value, json_logs=json_logs)
     output_dir = _validate_writable_directory(output_dir, "--output-dir")
     assets = _load(output_dir)
     if format is OutputFormat.PARQUET:
@@ -497,6 +501,16 @@ def export(
     else:
         export_catalog(assets, output_dir)
         typer.echo(f"Exported {format.value} to {output_dir}")
+    log_summary(
+        logging.getLogger("hl_asset_catalog.export"),
+        operation="export",
+        correlation_id=correlation_id,
+        counts={
+            "assets": len(assets),
+            "failures": 0,
+            "duration_seconds": round(time.perf_counter() - started, 6),
+        },
+    )
 
 
 @app.command("backtest-benchmark")
