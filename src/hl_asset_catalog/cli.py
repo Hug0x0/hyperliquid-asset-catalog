@@ -18,6 +18,7 @@ from .benchmark_engine import build_sector_benchmarks, export_benchmark_report
 from .classification import Classifier
 from .config import Settings
 from .discovery import discover_catalog
+from .doctor import doctor_exit_code, run_doctor
 from .exporters import export_catalog, make_report, validate_catalog_report
 from .hyperliquid_client import HyperliquidClient
 from .models import Instrument, MarketAnalytics
@@ -93,6 +94,24 @@ def _load(output_dir: Path) -> list[Instrument]:
     return [
         Instrument.model_validate(item) for item in json.loads(path.read_text(encoding="utf-8"))
     ]
+
+
+@app.command()
+def doctor(
+    output_dir: Path = Path("output"),
+    cache_dir: Path = Path(".cache/hl_asset_catalog"),
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Run safe, read-only configuration and cache diagnostics."""
+    report = run_doctor(ROOT, Settings(output_dir=output_dir, cache_dir=cache_dir))
+    if json_output:
+        typer.echo(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        for check in report["checks"]:
+            typer.echo(f"{check['status'].upper():7} {check['name']}: {check['message']}")
+    code = doctor_exit_code(report)
+    if code:
+        raise typer.Exit(code=code)
 
 
 @app.command()

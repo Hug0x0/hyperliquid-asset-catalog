@@ -23,6 +23,7 @@ hl-catalog fetch --dex xyz --active-only
 hl-catalog fetch --market-type spot
 hl-catalog fetch --asset-class equity --tag semiconductors
 hl-catalog validate
+hl-catalog doctor --json
 hl-catalog build-baskets
 hl-catalog build-benchmarks
 hl-catalog analyze-markets --lookback-days 90 --max-assets 40
