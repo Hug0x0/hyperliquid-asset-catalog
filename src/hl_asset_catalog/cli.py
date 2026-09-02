@@ -9,6 +9,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
+import httpx
 import typer
 
 from .analytics import analyze_markets, export_analytics
@@ -29,6 +30,7 @@ from .observability import configure_logging, log_summary
 from .parquet_export import export_parquet
 from .provenance import git_revision, write_analysis_manifest
 from .reporting import benchmark_quality, export_benchmark_quality, generate_medium_article
+from .tradexyz_enricher import TradeXYZEnricher
 from .utils import atomic_json
 
 app = typer.Typer(no_args_is_help=True, help="Read-only Hyperliquid asset catalog")
@@ -178,6 +180,22 @@ def enrich_market_caps_command(
         raise typer.BadParameter(str(exc), param_hint="source") from exc
     export_catalog(assets, output_dir)
     typer.echo(f"Enriched {sum(asset.market_cap_usd is not None for asset in assets)} assets")
+
+
+@app.command("monitor-tradexyz-docs")
+def monitor_tradexyz_docs(
+    url: str,
+    cache_dir: Path = Path(".cache/hl_asset_catalog/docs"),
+    ttl_seconds: Annotated[int, typer.Option(min=60)] = 86_400,
+) -> None:
+    """Check the opt-in TradeXYZ documentation table contract."""
+    try:
+        result = TradeXYZEnricher(cache_dir).monitor(url, ttl_seconds=ttl_seconds)
+    except (OSError, ValueError, PermissionError, httpx.HTTPError) as exc:
+        raise typer.BadParameter(str(exc), param_hint="url") from exc
+    typer.echo(json.dumps(result, indent=2, sort_keys=True))
+    if result["warnings"]:
+        raise typer.Exit(code=2)
 
 
 @app.command()
