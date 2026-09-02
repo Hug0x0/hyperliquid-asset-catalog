@@ -25,6 +25,7 @@ from .events import diff_catalogs, load_snapshot
 from .exporters import export_catalog, make_report, validate_catalog_report
 from .hyperliquid_client import HyperliquidClient
 from .market_cap import enrich_market_caps
+from .methodology import load_methodology
 from .models import Instrument, MarketAnalytics
 from .observability import configure_logging, log_summary
 from .parquet_export import export_parquet
@@ -500,6 +501,8 @@ def backtest_benchmark_command(
     output_path: Path = Path("output/benchmark_backtest.json"),
     weighting: BacktestWeighting = BacktestWeighting.EQUAL,
     rebalance_every: Annotated[int, typer.Option(min=1)] = 5,
+    methodology_id: str | None = None,
+    methodology_path: Path = ROOT / "config/benchmark_methodologies.yaml",
 ) -> None:
     """Backtest a benchmark from a local point-in-time history without look-ahead."""
     if not history_path.is_file():
@@ -507,12 +510,17 @@ def backtest_benchmark_command(
     history = json.loads(history_path.read_text(encoding="utf-8"))
     if not isinstance(history, list):
         raise typer.BadParameter("history must be a JSON array", param_hint="history_path")
-    result = backtest_benchmark(
-        history,
-        symbols=[symbol.upper() for symbol in symbols],
-        weighting=weighting.value,
-        rebalance_every=rebalance_every,
-    )
+    try:
+        methodology = load_methodology(methodology_path, methodology_id) if methodology_id else None
+        result = backtest_benchmark(
+            history,
+            symbols=[symbol.upper() for symbol in symbols],
+            weighting=weighting.value,
+            rebalance_every=rebalance_every,
+            methodology=methodology,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--methodology-id") from exc
     export_backtest(result, output_path)
     typer.echo(f"Wrote {result['observations']} backtest observations to {output_path}")
 

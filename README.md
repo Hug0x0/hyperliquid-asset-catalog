@@ -33,6 +33,7 @@ hl-catalog calibrate-scores
 hl-catalog enrich-market-caps caps.json --source-name PROVIDER --license-url https://example/license
 hl-catalog monitor-tradexyz-docs https://example/documentation
 hl-catalog backtest-benchmark history.json --symbol NVDA --symbol AMD
+hl-catalog backtest-benchmark history.json --symbol NVDA --methodology-id equal-weight
 hl-catalog export --format csv
 hl-catalog export --format parquet  # requires the parquet extra
 hl-catalog query --where asset_class=equity --sort-by canonical_symbol --format json

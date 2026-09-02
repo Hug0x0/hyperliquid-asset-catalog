@@ -5,6 +5,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Literal
 
+from .methodology import cap_weights, input_snapshot_id
 from .models import SCHEMA_VERSION
 from .utils import atomic_json
 
@@ -43,7 +44,11 @@ def backtest_benchmark(
     symbols: list[str],
     weighting: WeightingMethod = "equal",
     rebalance_every: int = 5,
+    methodology: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if methodology:
+        weighting = methodology["weighting"]
+        rebalance_every = int(methodology["rebalance_every_sessions"])
     by_date: dict[str, dict[str, dict[str, float]]] = defaultdict(dict)
     for item in history:
         symbol = str(item["symbol"]).upper()
@@ -75,7 +80,12 @@ def backtest_benchmark(
             histories[symbol].append(value)
         turnover = cost = 0.0
         if available and (not weights or index % rebalance_every == 0):
-            new_weights = _weights(available, rows, histories, weighting)
+            new_weights = cap_weights(
+                _weights(available, rows, histories, weighting),
+                float(methodology["max_weight"])
+                if methodology and methodology.get("max_weight") is not None
+                else None,
+            )
             turnover = (
                 sum(
                     abs(new_weights.get(symbol, 0) - weights.get(symbol, 0))
@@ -116,6 +126,8 @@ def backtest_benchmark(
     )
     return {
         "schema_version": SCHEMA_VERSION,
+        "methodology": methodology,
+        "input_snapshot_id": input_snapshot_id(history),
         "weighting": weighting,
         "rebalance_every_sessions": rebalance_every,
         "symbols": symbols,
