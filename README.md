@@ -30,6 +30,7 @@ hl-catalog build-baskets
 hl-catalog build-benchmarks
 hl-catalog analyze-markets --lookback-days 90 --max-assets 40
 hl-catalog calibrate-scores
+hl-catalog enrich-market-caps caps.json --source-name PROVIDER --license-url https://example/license
 hl-catalog backtest-benchmark history.json --symbol NVDA --symbol AMD
 hl-catalog export --format csv
 hl-catalog export --format parquet  # requires the parquet extra

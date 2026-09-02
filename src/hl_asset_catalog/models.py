@@ -53,6 +53,10 @@ class Instrument(BaseModel):
     open_interest: Decimal | None = None
     open_interest_usd: Decimal | None = None
     volume_24h_usd: Decimal | None = None
+    market_cap_usd: Decimal | None = None
+    market_cap_source: str | None = None
+    market_cap_license_url: str | None = None
+    market_cap_retrieved_at: str | None = None
     previous_day_price: Decimal | None = None
     price_change_24h_pct: Decimal | None = None
     trading_hours: str | None = None

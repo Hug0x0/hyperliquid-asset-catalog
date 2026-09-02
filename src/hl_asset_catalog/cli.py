@@ -23,6 +23,7 @@ from .doctor import doctor_exit_code, run_doctor
 from .events import diff_catalogs, load_snapshot
 from .exporters import export_catalog, make_report, validate_catalog_report
 from .hyperliquid_client import HyperliquidClient
+from .market_cap import enrich_market_caps
 from .models import Instrument, MarketAnalytics
 from .observability import configure_logging, log_summary
 from .parquet_export import export_parquet
@@ -159,6 +160,24 @@ def calibrate_scores(
     typer.echo(payload)
     if not report["bounds_valid"] or report["rank_correlation"] < 0.9:
         raise typer.Exit(code=1)
+
+
+@app.command("enrich-market-caps")
+def enrich_market_caps_command(
+    source: Path,
+    source_name: Annotated[str, typer.Option("--source-name")],
+    license_url: Annotated[str, typer.Option("--license-url")],
+    output_dir: Path = Path("output"),
+) -> None:
+    """Apply licensed market caps using exact catalog IDs only."""
+    try:
+        assets = enrich_market_caps(
+            _load(output_dir), source, source_name=source_name, license_url=license_url
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        raise typer.BadParameter(str(exc), param_hint="source") from exc
+    export_catalog(assets, output_dir)
+    typer.echo(f"Enriched {sum(asset.market_cap_usd is not None for asset in assets)} assets")
 
 
 @app.command()
