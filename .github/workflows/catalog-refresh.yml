@@ -1,0 +1,78 @@
+name: Catalog refresh
+
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: catalog-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e '.[parquet]'
+      - name: Refresh catalog
+        id: refresh
+        run: |
+          hl-catalog fetch --active-only --json-logs
+          hl-catalog validate --json
+          hl-catalog export --format parquet
+      - name: Build refresh manifest
+        if: always()
+        env:
+          RUN_ID: ${{ github.run_id }}
+          REVISION: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          Path("refresh-manifest.json").write_text(json.dumps({
+              "schema_version": "1.0",
+              "run_id": os.environ["RUN_ID"],
+              "revision": os.environ["REVISION"],
+              "completed_at": datetime.now(timezone.utc).isoformat(),
+          }, indent=2) + "\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: catalog-snapshot-${{ github.run_id }}
+          path: |
+            output/all_assets.json
+            output/catalog_diff.json
+            output/run_report.json
+            output/parquet/
+            refresh-manifest.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Alert on refresh failure
+        if: failure()
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const title = `ops: catalog refresh failed (${context.runId})`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', per_page: 100
+            });
+            const activeAlert = existing.data.some(issue => issue.title.startsWith('ops: catalog refresh failed'));
+            if (!activeAlert) {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo, title,
+                body: `Scheduled refresh failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              });
+            }

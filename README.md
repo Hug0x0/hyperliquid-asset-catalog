@@ -62,6 +62,9 @@ The `output/` directory contains the complete JSON/CSV catalog, native/HIP-3/XYZ
 subsets, a run report and catalog diff. `build-baskets` adds available and unavailable basket
 evaluations. Outputs and caches are deliberately excluded from Git.
 
+A daily read-only refresh publishes snapshots and diffs as 30-day GitHub Actions artifacts; see
+[`docs/SCHEDULED_REFRESH.md`](docs/SCHEDULED_REFRESH.md).
+
 `non_crypto_assets.json` and `non_crypto_assets.csv` contain only explicitly classified TradFi
 instruments; crypto, spot crypto and unknown instruments are excluded. `non_crypto_by_country.json`
 groups the same instruments by reference country. Cross-country commodities use `Global`, while
