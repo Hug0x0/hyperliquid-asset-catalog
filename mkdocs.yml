@@ -1,0 +1,30 @@
+site_name: Hyperliquid Asset Catalog
+site_description: Read-only discovery and analytics for Hyperliquid markets
+repo_url: https://github.com/Hug0x0/hyperliquid-asset-catalog
+strict: true
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+nav:
+  - Home: index.md
+  - Quickstart: QUICKSTART.md
+  - CLI: CLI.md
+  - Architecture: ARCHITECTURE.md
+  - Data contracts:
+      - Schema versioning: SCHEMA_VERSIONING.md
+      - Catalog events: CATALOG_EVENTS.md
+      - Parquet: PARQUET.md
+  - Analytics:
+      - Scores: SCORE_METHODOLOGY.md
+      - Benchmarks: BENCHMARK_METHODOLOGIES.md
+      - Sessions: MARKET_SESSIONS.md
+  - Operations:
+      - Diagnostics: DIAGNOSTICS.md
+      - Observability: OBSERVABILITY.md
+      - Refresh: SCHEDULED_REFRESH.md
+      - Container: CONTAINER.md
+  - Contributing: CONTRIBUTING.md
+  - Security: SECURITY.md
+docs_dir: site-docs

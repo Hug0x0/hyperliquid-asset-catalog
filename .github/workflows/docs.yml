@@ -1,0 +1,44 @@
+name: Documentation
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**", "site-docs/**", "mkdocs.yml", "README.md", "CONTRIBUTING.md", "SECURITY.md"]
+  pull_request:
+    paths: ["docs/**", "site-docs/**", "mkdocs.yml", "README.md", "CONTRIBUTING.md", "SECURITY.md"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[docs]'
+      - run: python scripts/build_site_docs.py
+      - run: hl-catalog --help && hl-catalog calibrate-scores
+      - run: mkdocs build --strict
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress './site/**/*.html'
+      - run: npm install -g @lhci/cli@0.15.x
+      - run: lhci autorun
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          path: site
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

@@ -122,6 +122,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before proposing code or classification c
 [SECURITY.md](SECURITY.md) for private vulnerability reporting, and [RELEASING.md](RELEASING.md)
 for the tagged release process.
 
+The versioned documentation site is built from `mkdocs.yml` and published by the least-privilege
+GitHub Pages workflow.
+
 Official references: [Info endpoint](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint),
 [perpetuals](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint/perpetuals),
 [spot](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint/spot), and
