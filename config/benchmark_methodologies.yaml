@@ -1,0 +1,20 @@
+schema_version: "1.0"
+methodologies:
+  equal-weight:
+    version: "1.0.0"
+    eligibility:
+      active_only: true
+      minimum_observations: 1
+    weighting: equal
+    max_weight: null
+    constituent_buffer: 0
+    rebalance_every_sessions: 5
+  liquidity-capped:
+    version: "1.0.0"
+    eligibility:
+      active_only: true
+      minimum_observations: 20
+    weighting: liquidity
+    max_weight: 0.4
+    constituent_buffer: 1
+    rebalance_every_sessions: 5

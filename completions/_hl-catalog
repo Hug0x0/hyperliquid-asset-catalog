@@ -1,0 +1,1 @@
+eval "$(_HL_CATALOG_COMPLETE=source_zsh hl-catalog)"

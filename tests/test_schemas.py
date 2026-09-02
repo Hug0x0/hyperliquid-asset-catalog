@@ -4,6 +4,8 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 from hl_asset_catalog.analytics import export_analytics
+from hl_asset_catalog.events import diff_catalogs
+from hl_asset_catalog.methodology import load_methodology
 from hl_asset_catalog.models import Instrument, MarketAnalytics
 
 SCHEMAS = Path(__file__).parents[1] / "schemas"
@@ -50,3 +52,19 @@ def test_exported_matrix_envelope_matches_schema(tmp_path: Path) -> None:
     validator = Draft202012Validator(schema("matrix.schema.json"))
     validator.validate(json.loads((tmp_path / "correlation_matrix.json").read_text()))
     validator.validate(json.loads((tmp_path / "correlation_observations.json").read_text()))
+
+
+def test_catalog_event_matches_schema() -> None:
+    event = diff_catalogs(
+        [],
+        [{"id": "native:BTC", "asset_class": "crypto"}],
+        observed_at="2026-01-01T00:00:00Z",
+    )[0]
+    Draft202012Validator(schema("catalog-event.schema.json")).validate(event)
+
+
+def test_benchmark_methodology_matches_schema() -> None:
+    method = load_methodology(
+        Path(__file__).parents[1] / "config/benchmark_methodologies.yaml", "equal-weight"
+    )
+    Draft202012Validator(schema("benchmark-methodology.schema.json")).validate(method)

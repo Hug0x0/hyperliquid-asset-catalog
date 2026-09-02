@@ -11,6 +11,19 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+site/
+site-docs/CLI.md
+site-docs/SCHEMA_VERSIONING.md
+site-docs/CATALOG_EVENTS.md
+site-docs/PARQUET.md
+site-docs/SCORE_METHODOLOGY.md
+site-docs/BENCHMARK_METHODOLOGIES.md
+site-docs/MARKET_SESSIONS.md
+site-docs/OBSERVABILITY.md
+site-docs/SCHEDULED_REFRESH.md
+site-docs/CONTAINER.md
+site-docs/CONTRIBUTING.md
+site-docs/SECURITY.md
 dist/
 build/
 *.egg-info/
@@ -20,4 +33,3 @@ build/
 cookies*.json
 *.pem
 *.key
-

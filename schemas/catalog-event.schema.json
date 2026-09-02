@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Hug0x0/hyperliquid-asset-catalog/schemas/catalog-event.schema.json",
+  "title": "Catalog event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "event_id", "observed_at", "asset_id", "event_type", "before", "after", "source"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "event_id": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "asset_id": {"type": "string", "minLength": 1},
+    "event_type": {"enum": ["listing", "delisting", "metadata_change", "classification_change"]},
+    "before": {"type": ["object", "null"]},
+    "after": {"type": ["object", "null"]},
+    "source": {"const": "catalog_snapshot_diff"}
+  }
+}

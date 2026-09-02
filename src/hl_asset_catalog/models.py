@@ -7,6 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 SCHEMA_VERSION: Literal["1.0"] = "1.0"
+SCORE_VERSION: Literal["1.0.0"] = "1.0.0"
 
 AssetClass = Literal[
     "crypto",
@@ -53,6 +54,10 @@ class Instrument(BaseModel):
     open_interest: Decimal | None = None
     open_interest_usd: Decimal | None = None
     volume_24h_usd: Decimal | None = None
+    market_cap_usd: Decimal | None = None
+    market_cap_source: str | None = None
+    market_cap_license_url: str | None = None
+    market_cap_retrieved_at: str | None = None
     previous_day_price: Decimal | None = None
     price_change_24h_pct: Decimal | None = None
     trading_hours: str | None = None
@@ -100,6 +105,7 @@ class BenchmarkResult(BaseModel):
 
 class MarketAnalytics(BaseModel):
     schema_version: Literal["1.0"] = SCHEMA_VERSION
+    score_version: Literal["1.0.0"] = SCORE_VERSION
     instrument_id: str
     symbol: str
     dex: str

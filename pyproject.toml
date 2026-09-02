@@ -31,7 +31,9 @@ Repository = "https://github.com/Hug0x0/hyperliquid-asset-catalog"
 Issues = "https://github.com/Hug0x0/hyperliquid-asset-catalog/issues"
 
 [project.optional-dependencies]
-dev = ["build>=1.3,<2", "hypothesis>=6.138,<7", "jsonschema>=4.25,<5", "mypy>=1.11", "pip-audit>=2.9,<3", "pytest>=8.3", "pytest-asyncio>=0.24", "respx>=0.21", "ruff>=0.6", "twine>=6.2,<7", "types-PyYAML>=6"]
+parquet = ["pyarrow>=17,<24"]
+docs = ["mkdocs-material>=9.6,<10"]
+dev = ["build>=1.3,<2", "hypothesis>=6.138,<7", "jsonschema>=4.25,<5", "mypy>=1.11", "mutmut>=3.3,<4", "pip-audit>=2.9,<3", "pytest>=8.3", "pytest-asyncio>=0.24", "pytest-cov>=6,<8", "respx>=0.21", "ruff>=0.6", "twine>=6.2,<7", "types-PyYAML>=6"]
 
 [project.scripts]
 hl-catalog = "hl_asset_catalog.cli:app"
@@ -42,6 +44,24 @@ packages = ["src/hl_asset_catalog"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+branch = true
+source = ["hl_asset_catalog"]
+omit = ["src/hl_asset_catalog/__init__.py"]
+
+[tool.coverage.report]
+fail_under = 70
+show_missing = true
+
+[tool.mutmut]
+paths_to_mutate = [
+  "src/hl_asset_catalog/events.py",
+  "src/hl_asset_catalog/classification.py",
+  "src/hl_asset_catalog/statistics.py",
+]
+tests_dir = ["tests/"]
 
 [tool.ruff]
 line-length = 100

@@ -14,20 +14,31 @@ source .venv/bin/activate
 pip install -e '.[dev]'
 ```
 
+Release containers are documented in [`docs/CONTAINER.md`](docs/CONTAINER.md).
+
 ## Usage
 
 ```bash
 hl-catalog list-dexes
 hl-catalog fetch --pretty --include-raw
+hl-catalog fetch --json-logs
 hl-catalog fetch --dex xyz --active-only
 hl-catalog fetch --market-type spot
 hl-catalog fetch --asset-class equity --tag semiconductors
 hl-catalog validate
+hl-catalog doctor --json
+hl-catalog diff-events previous.json current.json --output events.jsonl
 hl-catalog build-baskets
 hl-catalog build-benchmarks
 hl-catalog analyze-markets --lookback-days 90 --max-assets 40
+hl-catalog calibrate-scores
+hl-catalog enrich-market-caps caps.json --source-name PROVIDER --license-url https://example/license
+hl-catalog monitor-tradexyz-docs https://example/documentation
 hl-catalog backtest-benchmark history.json --symbol NVDA --symbol AMD
+hl-catalog backtest-benchmark history.json --symbol NVDA --methodology-id equal-weight
 hl-catalog export --format csv
+hl-catalog export --format parquet  # requires the parquet extra
+hl-catalog query --where asset_class=equity --sort-by canonical_symbol --format json
 ```
 
 `fetch` discovers the DEX list first and queries metadata/context for each DEX concurrently.
@@ -54,6 +65,9 @@ lives in `config/classification_rules.yaml`; no LLM runs in the pipeline.
 The `output/` directory contains the complete JSON/CSV catalog, native/HIP-3/XYZ/spot/classified
 subsets, a run report and catalog diff. `build-baskets` adds available and unavailable basket
 evaluations. Outputs and caches are deliberately excluded from Git.
+
+A daily read-only refresh publishes snapshots and diffs as 30-day GitHub Actions artifacts; see
+[`docs/SCHEDULED_REFRESH.md`](docs/SCHEDULED_REFRESH.md).
 
 `non_crypto_assets.json` and `non_crypto_assets.csv` contain only explicitly classified TradFi
 instruments; crypto, spot crypto and unknown instruments are excluded. `non_crypto_by_country.json`
@@ -107,6 +121,9 @@ twine check dist/*
 See [CONTRIBUTING.md](CONTRIBUTING.md) before proposing code or classification changes,
 [SECURITY.md](SECURITY.md) for private vulnerability reporting, and [RELEASING.md](RELEASING.md)
 for the tagged release process.
+
+The versioned documentation site is built from `mkdocs.yml` and published by the least-privilege
+GitHub Pages workflow.
 
 Official references: [Info endpoint](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint),
 [perpetuals](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint/perpetuals),
